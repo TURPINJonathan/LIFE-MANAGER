@@ -1,0 +1,12 @@
+api_platform:
+    title: Life Manager API
+    version: 0.1.0
+    formats:
+        jsonld: ['application/ld+json']
+        json: ['application/json']
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+    mapping:
+        paths: ['%kernel.project_dir%/src/Module']

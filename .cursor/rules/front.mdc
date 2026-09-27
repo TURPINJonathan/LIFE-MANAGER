@@ -1,0 +1,30 @@
+---
+description: Conventions front React de Life Manager
+globs: front/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# Front
+
+Détail : `docs/frontend.md` et `docs/security.md`.
+
+- Une route dans `app/routes.ts` et un fichier mince dans `app/routes/`. L'écran vit dans `app/pages` ou `app/modules/<domaine>`.
+- Les appels HTTP passent par `app/services`. Le JWT n'est lu que par le store d'authentification.
+- Une page connectée est sous le layout `_protected`, qui rend `AuthGuard` puis `AppShell`.
+- Ajouter un écran principal dans `NAV_ITEMS`.
+- Alias de `tsconfig.json` (`@layouts`, `@security`, `@store`, `@app-types`, …). Pas d'import relatif qui remonte au-dessus du dossier courant, sauf à l'intérieur d'un même module.
+- Ne jamais nommer un alias `@types` : cela masque `@types/react` et casse la résolution JSX (`react/jsx-runtime`).
+- `npm run ci` avant de considérer un changement front terminé.
+
+## Dominance de couleur (accent)
+
+La teinte dominante change par page via `data-accent` sur `<html>` (hook `useRouteAccent` dans `_root`).
+
+- **Ne pas** coder une couleur de marque en dur dans un composant (`#…`, `bg-green-…`). Utiliser les tokens (`bg-accent`, `text-brand`, `bg-accent-tint`, …).
+- **Défaut** = `neutral` (slate). Accueil et login restent neutres.
+- **Ajouter / modifier une dominance** (3 fichiers seulement) :
+  1. Clé dans `APP_ACCENT` (`front/app/constants/accent.constants.ts`)
+  2. Entrée `prefix → accent` dans `ROUTE_ACCENT` (même fichier)
+  3. Bloc `[data-accent='…']` (+ variante `html.dark[data-accent='…']` si besoin) dans `front/app/app.css`
+- Les sous-routes héritent du plus long préfixe (`/comptes/nouveau` → `accounts`).
+- Détail et exemples : `docs/frontend.md` § Dominance.

@@ -1,0 +1,17 @@
+---
+description: Conventions API Symfony de Life Manager
+globs: api/**/*.{php,yaml,yml}
+alwaysApply: false
+---
+
+# API
+
+Détail : `docs/architecture.md` et `docs/security.md`.
+
+- Code dans `src/Module/<Nom>/{Contract,Domain,Dto,Repository,Service,Provider,Controller,Infrastructure,Exception}`.
+- `declare(strict_types=1)` sur chaque fichier PHP.
+- Une entité Doctrine reste dans `Domain/Entity`. Ne pas y exposer le mot de passe via API Platform.
+- Toute opération API Platform déclare `security`. Le login reste `POST /api/login`, le profil `GET /api/me`.
+- Les rôles passent par `UserRole`. `ROLE_USER` est toujours renvoyé par `User::getRoles()`.
+- Migrations via `make migration` puis `make migrate`. Pas de changement de schéma hors migration.
+- Commandes utiles : `make qa`, `make test`, `make cs-fix`.

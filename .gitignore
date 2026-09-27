@@ -1,0 +1,14 @@
+.DS_Store
+api/vendor/
+api/var/
+api/.env.local
+api/.env.*.local
+api/config/jwt/*.pem
+api/.phpunit.cache/
+api/.php-cs-fixer.cache
+front/node_modules/
+front/build/
+front/.react-router/
+front/coverage/
+front/.env
+front/.env.local

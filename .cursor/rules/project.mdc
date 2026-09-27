@@ -1,0 +1,13 @@
+---
+description: Socle Life Manager — où lire les conventions
+alwaysApply: true
+---
+
+# Life Manager
+
+Lire `docs/architecture.md`, `docs/security.md` et `docs/frontend.md` avant de modifier le projet.
+
+- Monorepo : `api/` (Symfony, API Platform, PostgreSQL) et `front/` (React Router).
+- Un domaine = `api/src/Module/<Nom>` et, côté écran, `front/app/modules/<nom>`.
+- Répondre en français. Ne pas committer sans demande explicite.
+- Les secrets, `.env.local` et `api/config/jwt/*.pem` restent hors git.

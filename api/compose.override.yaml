@@ -1,0 +1,3 @@
+# Override local : le port Postgres est fixé dans compose.yaml (9432:5432).
+# Ne pas republier "5432" ici (mapping aléatoire + confusion avec FYNX).
+services: {}

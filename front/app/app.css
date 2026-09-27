@@ -1,0 +1,323 @@
+@import 'tailwindcss';
+@import './keyframes.css';
+
+@variant dark (&:where(.dark, .dark *));
+
+@utility icon-filled {
+  font-variation-settings: 'FILL' 1;
+}
+
+.material-symbols-outlined {
+  direction: ltr;
+  display: inline-block;
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+}
+
+@theme {
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+}
+
+@theme {
+  --text-display: 2rem;
+  --text-display--line-height: 2.5rem;
+  --text-display--letter-spacing: -0.015em;
+  --text-headline: 2.5rem;
+  --text-headline--line-height: 3rem;
+  --text-headline--letter-spacing: -0.02em;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.75rem;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.375rem;
+  --text-control: 0.8125rem;
+  --text-icon-xs: 14px;
+  --text-icon-sm: 18px;
+  --text-icon: 20px;
+  --text-icon-lg: 4rem;
+
+  --tracking-label: 0.01em;
+  --tracking-eyebrow: 0.04em;
+  --tracking-eyebrow-wide: 0.12em;
+
+  --radius-control: 0.75rem;
+  --radius-control-sm: 0.5rem;
+  --radius-panel: 1.5rem;
+
+  --container-form: 26.25rem;
+
+  --spacing-stack-xs: 0.5rem;
+  --spacing-stack-sm: 1rem;
+  --spacing-stack-md: 1.5rem;
+  --spacing-stack-lg: 2rem;
+
+  --animate-fade-in: fade-in var(--duration-fast) ease-out;
+  --animate-pop: pop var(--duration-slow) ease-out;
+  --animate-art-in: art-in var(--duration-art) ease-out;
+}
+
+/*
+ * Couleurs sémantiques → utilities Tailwind (bg-accent, text-brand, …).
+ * Les valeurs réelles vivent dans :root / [data-accent="…"] pour pouvoir
+ * changer la dominance par page sans toucher aux composants.
+ */
+@theme inline {
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-press: var(--accent-press);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-deep: var(--deep);
+  --color-slate: var(--slate);
+  --color-accent-tint: var(--accent-tint);
+
+  --color-page: var(--bg-page);
+  --color-card: var(--bg-card);
+  --color-elevated: var(--bg-elevated);
+  --color-subtle: var(--bg-subtle);
+  --color-fg-primary: var(--fg-primary);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-fg-muted: var(--fg-muted);
+  --color-border: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-border-subtle: var(--border-subtle);
+  --color-success: var(--success);
+  --color-success-strong: var(--success-strong);
+  --color-error: var(--error);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-outline: var(--accent-outline);
+  --color-accent-ghost: var(--accent-ghost);
+  --color-disabled: var(--disabled-bg);
+  --color-disabled-border: var(--disabled-border);
+  --color-disabled-fg: var(--disabled-fg);
+  --color-error-surface: var(--error-surface);
+  --color-error-on-surface: var(--error-on-surface);
+}
+
+/* Surfaces neutres + accent par défaut (slate). */
+:root,
+[data-accent='neutral'] {
+  --bg-page: #f1f5f9;
+  --bg-card: #fff;
+  --bg-elevated: #fff;
+  --bg-subtle: #e2e8f0;
+  --fg-primary: #0f172a;
+  --fg-secondary: #475569;
+  --fg-muted: #64748b;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+  --border-subtle: #e2e8f0;
+  --success: #22c55e;
+  --success-strong: #15803d;
+  --error: #ef4444;
+  --disabled-bg: #9ca3af;
+  --disabled-border: #d1d5db;
+  --disabled-fg: #9ca3af;
+  --error-surface: #fee2e2;
+  --error-on-surface: #b91c1c;
+  --duration-fast: 200ms;
+  --duration-medium: 250ms;
+  --duration-slow: 300ms;
+  --duration-art: 700ms;
+  --app-height: 100dvh;
+  --app-tab-nav-block-size: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+
+  --accent: #475569;
+  --accent-hover: #64748b;
+  --accent-press: #334155;
+  --brand: #1e293b;
+  --brand-hover: #334155;
+  --deep: #0f172a;
+  --slate: #e2e8f0;
+  --accent-tint: #e2e8f0;
+  --accent-subtle: rgb(71 85 105 / 12%);
+  --accent-outline: rgb(71 85 105 / 40%);
+  --accent-ghost: rgb(71 85 105 / 10%);
+  --focus-ring: 0 0 0 3px rgb(71 85 105 / 20%);
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 6%);
+  --shadow-md: 0 2px 8px rgb(15 23 42 / 8%), 0 1px 2px rgb(15 23 42 / 4%);
+  --shadow-lg: 0 8px 24px rgb(15 23 42 / 10%), 0 2px 6px rgb(15 23 42 / 6%);
+}
+
+/* Packs de dominance — une clé = un bloc. Ajouter ici pour une nouvelle teinte. */
+[data-accent='accounts'] {
+  --bg-page: #faf6f3;
+  --bg-subtle: #f3e8e0;
+  --border-subtle: #f0e4db;
+  --accent: #c2410c;
+  --accent-hover: #ea580c;
+  --accent-press: #9a3412;
+  --brand: #7c2d12;
+  --brand-hover: #9a3412;
+  --deep: #431407;
+  --slate: #ffedd5;
+  --accent-tint: #ffedd5;
+  --accent-subtle: rgb(194 65 12 / 12%);
+  --accent-outline: rgb(194 65 12 / 40%);
+  --accent-ghost: rgb(194 65 12 / 10%);
+  --focus-ring: 0 0 0 3px rgb(194 65 12 / 20%);
+}
+
+[data-accent='events'] {
+  --bg-page: #f2f8f9;
+  --bg-subtle: #ddecef;
+  --border-subtle: #d5e6ea;
+  --accent: #0e7490;
+  --accent-hover: #0891b2;
+  --accent-press: #155e75;
+  --brand: #164e63;
+  --brand-hover: #155e75;
+  --deep: #083344;
+  --slate: #cffafe;
+  --accent-tint: #cffafe;
+  --accent-subtle: rgb(14 116 144 / 12%);
+  --accent-outline: rgb(14 116 144 / 40%);
+  --accent-ghost: rgb(14 116 144 / 10%);
+  --focus-ring: 0 0 0 3px rgb(14 116 144 / 20%);
+}
+
+[data-accent='categories'] {
+  --bg-page: #f6f4f8;
+  --bg-subtle: #e8e3ef;
+  --border-subtle: #e2dce9;
+  --accent: #6d5280;
+  --accent-hover: #84669a;
+  --accent-press: #563f66;
+  --brand: #3f2f4c;
+  --brand-hover: #563f66;
+  --deep: #251b2e;
+  --slate: #ede4f3;
+  --accent-tint: #ede4f3;
+  --accent-subtle: rgb(109 82 128 / 12%);
+  --accent-outline: rgb(109 82 128 / 40%);
+  --accent-ghost: rgb(109 82 128 / 10%);
+  --focus-ring: 0 0 0 3px rgb(109 82 128 / 20%);
+}
+
+[data-accent='settings'] {
+  --bg-page: #f3f6fa;
+  --bg-subtle: #e0e7f0;
+  --border-subtle: #d8e0eb;
+  --accent: #2563eb;
+  --accent-hover: #3b82f6;
+  --accent-press: #1d4ed8;
+  --brand: #1e3a8a;
+  --brand-hover: #1d4ed8;
+  --deep: #172554;
+  --slate: #dbeafe;
+  --accent-tint: #dbeafe;
+  --accent-subtle: rgb(37 99 235 / 12%);
+  --accent-outline: rgb(37 99 235 / 40%);
+  --accent-ghost: rgb(37 99 235 / 10%);
+  --focus-ring: 0 0 0 3px rgb(37 99 235 / 20%);
+}
+
+.dark {
+  --bg-page: #0f172a;
+  --bg-card: #1e293b;
+  --bg-elevated: #243447;
+  --bg-subtle: #1e293b;
+  --fg-primary: #e2e8f0;
+  --fg-secondary: #94a3b8;
+  --fg-muted: #64748b;
+  --border-default: #334155;
+  --border-strong: #475569;
+  --border-subtle: #1e293b;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-md: 0 2px 8px rgb(0 0 0 / 35%);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 45%);
+  --error-surface: rgb(239 68 68 / 12%);
+  --error-on-surface: #fca5a5;
+}
+
+html.dark[data-accent='accounts'] {
+  --accent: #fb923c;
+  --accent-hover: #fdba74;
+  --accent-press: #f97316;
+  --brand: #fed7aa;
+  --accent-tint: rgb(251 146 60 / 16%);
+  --accent-subtle: rgb(251 146 60 / 14%);
+  --accent-outline: rgb(251 146 60 / 40%);
+  --accent-ghost: rgb(251 146 60 / 12%);
+  --focus-ring: 0 0 0 3px rgb(251 146 60 / 25%);
+}
+
+html.dark[data-accent='events'] {
+  --accent: #22d3ee;
+  --accent-hover: #67e8f9;
+  --accent-press: #06b6d4;
+  --brand: #a5f3fc;
+  --accent-tint: rgb(34 211 238 / 16%);
+  --accent-subtle: rgb(34 211 238 / 14%);
+  --accent-outline: rgb(34 211 238 / 40%);
+  --accent-ghost: rgb(34 211 238 / 12%);
+  --focus-ring: 0 0 0 3px rgb(34 211 238 / 25%);
+}
+
+html.dark[data-accent='categories'] {
+  --accent: #c4b0d4;
+  --accent-hover: #d8c9e4;
+  --accent-press: #a98cbc;
+  --brand: #e8dff0;
+  --accent-tint: rgb(196 176 212 / 16%);
+  --accent-subtle: rgb(196 176 212 / 14%);
+  --accent-outline: rgb(196 176 212 / 40%);
+  --accent-ghost: rgb(196 176 212 / 12%);
+  --focus-ring: 0 0 0 3px rgb(196 176 212 / 25%);
+}
+
+html.dark[data-accent='settings'] {
+  --accent: #60a5fa;
+  --accent-hover: #93c5fd;
+  --accent-press: #3b82f6;
+  --brand: #bfdbfe;
+  --accent-tint: rgb(96 165 250 / 16%);
+  --accent-subtle: rgb(96 165 250 / 14%);
+  --accent-outline: rgb(96 165 250 / 40%);
+  --accent-ghost: rgb(96 165 250 / 12%);
+  --focus-ring: 0 0 0 3px rgb(96 165 250 / 25%);
+}
+
+html.dark[data-accent='neutral'] {
+  --accent: #94a3b8;
+  --accent-hover: #cbd5e1;
+  --accent-press: #64748b;
+  --brand: #e2e8f0;
+  --accent-tint: rgb(148 163 184 / 16%);
+  --accent-subtle: rgb(148 163 184 / 14%);
+  --accent-outline: rgb(148 163 184 / 40%);
+  --accent-ghost: rgb(148 163 184 / 12%);
+  --focus-ring: 0 0 0 3px rgb(148 163 184 / 25%);
+}
+
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+  height: 100%;
+  color: var(--fg-primary);
+  color-scheme: light;
+  background: var(--bg-page);
+  font-family: var(--font-sans);
+  transition:
+    background-color var(--duration-medium) ease,
+    color var(--duration-medium) ease;
+}
+
+html.dark,
+html.dark body {
+  color-scheme: dark;
+}
+
+* {
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
