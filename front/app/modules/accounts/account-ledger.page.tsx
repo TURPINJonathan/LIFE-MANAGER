@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type KeyboardEvent } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { Link, useParams, useSearchParams } from 'react-router';
 
 import {
@@ -15,6 +15,7 @@ import {
   IconButton,
   Select,
   Tooltip,
+  TpeAmountInput,
   Typography,
 } from '@components';
 import {
@@ -136,7 +137,6 @@ export function AccountLedgerPage() {
     (selectedCategory?.kind === 'both' && flow === 'debit') ||
     (!selectedCategory && flow === 'debit');
   const amountToneClass = amountIsExpense ? 'text-error' : 'text-success-strong';
-  const amountField = form.register('amount', { required: true });
 
   const setView = (next: LedgerView) => {
     if (next === 'budget') {
@@ -251,9 +251,7 @@ export function AccountLedgerPage() {
     const file = event.dataTransfer.files?.[0] ?? null;
     if (!file) return;
     const ok =
-      file.type.startsWith('image/') ||
-      file.type === 'application/pdf' ||
-      /\.(pdf|jpe?g|png|webp)$/i.test(file.name);
+      file.type.startsWith('image/') || file.type === 'application/pdf' || /\.(pdf|jpe?g|png|webp)$/i.test(file.name);
     if (!ok) {
       toastError('Fichier non supporté (image ou PDF).');
       return;
@@ -874,19 +872,22 @@ export function AccountLedgerPage() {
           <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
             <FormField label="Montant" htmlFor="tx-amount" className="flex h-full flex-col">
               <div className="relative flex min-h-24 flex-1 items-stretch overflow-hidden rounded-control border border-border bg-page transition-[border-color,box-shadow] duration-(--duration-fast) focus-within:border-accent focus-within:shadow-[var(--focus-ring)] hover:border-border-strong dark:bg-elevated">
-                <input
-                  id="tx-amount"
-                  className={cn(
-                    'min-w-0 flex-1 border-0 bg-transparent px-10 py-3 text-center text-[2rem] leading-none font-bold tabular-nums outline-none placeholder:text-fg-muted/50',
-                    amountToneClass,
+                <Controller
+                  name="amount"
+                  control={form.control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <TpeAmountInput
+                      id="tx-amount"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      className={cn(
+                        'min-w-0 flex-1 border-0 bg-transparent px-10 py-3 text-center text-[2rem] leading-none font-bold tabular-nums outline-none',
+                        amountToneClass,
+                      )}
+                    />
                   )}
-                  placeholder="0,00"
-                  inputMode="decimal"
-                  {...amountField}
-                  onFocus={(event) => {
-                    event.currentTarget.select();
-                  }}
-                  onClick={(event) => event.currentTarget.select()}
                 />
                 <span
                   className={cn(

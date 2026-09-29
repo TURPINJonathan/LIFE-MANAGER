@@ -19,5 +19,6 @@ export { SectionCard } from './section-card.component';
 export { Select } from './select.component';
 export { Spinner } from './spinner.component';
 export { ToastHost } from './toast-host.component';
+export { TpeAmountInput } from './tpe-amount-input.component';
 export { Tooltip } from './tooltip.component';
 export { Typography } from './typography.component';

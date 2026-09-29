@@ -25,14 +25,7 @@ import {
   PRESET_COLORS,
 } from '@constants';
 import { MerchantVisual } from '@merchants';
-import {
-  ApiError,
-  archiveCategory,
-  createCategory,
-  listCategories,
-  listMerchants,
-  updateCategory,
-} from '@services';
+import { ApiError, archiveCategory, createCategory, listCategories, listMerchants, updateCategory } from '@services';
 import { useAuthStore } from '@store';
 import type { Category, CategoryKind, Merchant } from '@app-types';
 import { cn, toastFromError, toastSuccess } from '@utils';
@@ -114,9 +107,7 @@ export function CategoriesSettingsPanel() {
 
   const toggleMerchant = (merchantId: string) => {
     const current = form.getValues('merchantIds');
-    const next = current.includes(merchantId)
-      ? current.filter((id) => id !== merchantId)
-      : [...current, merchantId];
+    const next = current.includes(merchantId) ? current.filter((id) => id !== merchantId) : [...current, merchantId];
     form.setValue('merchantIds', next, { shouldDirty: true });
     const favorite = form.getValues('favoriteMerchantId');
     if (next.length === 1) {
@@ -323,16 +314,17 @@ export function CategoriesSettingsPanel() {
                           aria-label={isFavorite ? 'Favori' : 'Définir comme favori'}
                           title={isFavorite ? 'Favori' : 'Définir comme favori'}
                           disabled={linkedCount === 1}
-                          onClick={() =>
-                            form.setValue('favoriteMerchantId', merchant.id, { shouldDirty: true })
-                          }
+                          onClick={() => form.setValue('favoriteMerchantId', merchant.id, { shouldDirty: true })}
                           className={cn(
                             'flex size-8 cursor-pointer items-center justify-center rounded-control transition-colors',
                             isFavorite ? 'text-warning' : 'text-fg-muted hover:text-fg-secondary',
                             linkedCount === 1 && 'cursor-default',
                           )}
                         >
-                          <Icon name={isFavorite ? 'star' : 'star'} className={cn('text-icon-sm', isFavorite && 'icon-filled')} />
+                          <Icon
+                            name={isFavorite ? 'star' : 'star'}
+                            className={cn('text-icon-sm', isFavorite && 'icon-filled')}
+                          />
                         </button>
                       ) : (
                         <span className="size-8" />

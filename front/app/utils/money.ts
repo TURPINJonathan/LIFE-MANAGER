@@ -23,3 +23,36 @@ export function parseEurosToCents(raw: string): number | null {
 export function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2).replace('.', ',');
 }
+
+/** Plafond saisie TPE : 999 999,99 €. */
+export const MAX_TPE_AMOUNT_CENTS = 99_999_999;
+
+export function formatTpeAmount(cents: number): string {
+  return centsToInput(Math.max(0, Math.trunc(cents)));
+}
+
+export function appendTpeDigit(cents: number, digit: number): number {
+  const safe = Math.max(0, Math.trunc(cents));
+  if (!Number.isInteger(digit) || digit < 0 || digit > 9) {
+    return safe;
+  }
+  const next = safe * 10 + digit;
+  return next > MAX_TPE_AMOUNT_CENTS ? safe : next;
+}
+
+export function backspaceTpeCents(cents: number): number {
+  return Math.floor(Math.max(0, Math.trunc(cents)) / 10);
+}
+
+/** Interprète une chaîne (collage) comme buffer centimes : chiffres uniquement. */
+export function centsFromDigitString(raw: string): number {
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) {
+    return 0;
+  }
+  const parsed = Number.parseInt(digits, 10);
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+  return Math.min(parsed, MAX_TPE_AMOUNT_CENTS);
+}

@@ -7,5 +7,15 @@ export {
   ICON_CATALOG_RESULT_LIMIT,
   type FilterIconCatalogResult,
 } from './icon-catalog';
-export { centsToInput, formatCents, parseEurosToCents, signedAmountClass } from './money';
+export {
+  MAX_TPE_AMOUNT_CENTS,
+  appendTpeDigit,
+  backspaceTpeCents,
+  centsFromDigitString,
+  centsToInput,
+  formatCents,
+  formatTpeAmount,
+  parseEurosToCents,
+  signedAmountClass,
+} from './money';
 export { toastError, toastFromError, toastInfo, toastSuccess } from './toast.utils';

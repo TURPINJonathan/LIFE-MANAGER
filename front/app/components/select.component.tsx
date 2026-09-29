@@ -273,7 +273,10 @@ export function Select({
     <div className="flex min-h-0 flex-col gap-2">
       {searchable ? (
         <div className="relative shrink-0">
-          <Icon name="search" className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-icon-sm text-fg-muted" />
+          <Icon
+            name="search"
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-icon-sm text-fg-muted"
+          />
           <input
             ref={searchRef}
             id={searchId}

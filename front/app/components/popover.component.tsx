@@ -16,11 +16,7 @@ interface IPopoverProps {
   matchAnchorWidth?: boolean;
 }
 
-function getPanelStyle(
-  anchor: HTMLElement,
-  placement: PopoverPlacement,
-  matchAnchorWidth: boolean,
-): CSSProperties {
+function getPanelStyle(anchor: HTMLElement, placement: PopoverPlacement, matchAnchorWidth: boolean): CSSProperties {
   const rect = anchor.getBoundingClientRect();
 
   if (placement === POPOVER_PLACEMENT.rightStart) {

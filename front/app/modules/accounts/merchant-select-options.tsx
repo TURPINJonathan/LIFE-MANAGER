@@ -20,10 +20,7 @@ function merchantLeading(merchant: Merchant) {
 }
 
 /** Enseignes liées à la catégorie (A–Z) puis les autres (A–Z). */
-export function buildMerchantSelectOptions(
-  merchants: Merchant[],
-  category: Category | undefined,
-): SelectOption[] {
+export function buildMerchantSelectOptions(merchants: Merchant[], category: Category | undefined): SelectOption[] {
   const linkedIds = new Set(category?.merchantIds ?? []);
   const linked = merchants.filter((item) => linkedIds.has(item.id)).sort(byNameFr);
   const others = merchants.filter((item) => !linkedIds.has(item.id)).sort(byNameFr);

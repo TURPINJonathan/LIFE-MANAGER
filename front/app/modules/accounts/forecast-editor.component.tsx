@@ -1,4 +1,4 @@
-import { Button, Icon, IconButton, Select } from '@components';
+import { Button, Icon, IconButton, Select, TpeAmountInput } from '@components';
 import { BUTTON_VARIANT, FIELD_CONTROL_CLASSES, ICON_BUTTON_VARIANT } from '@constants';
 import type { Category, ForecastStatsPreviousCategory } from '@app-types';
 import { cn, formatCents, signedAmountClass } from '@utils';
@@ -113,13 +113,11 @@ export function ForecastEditor({
 
               <div className="min-w-0">
                 <div className="relative">
-                  <input
+                  <TpeAmountInput
                     className={cn(FIELD_CONTROL_CLASSES, 'pe-7 tabular-nums')}
                     value={row.amount}
-                    placeholder="0,00"
-                    inputMode="decimal"
                     aria-label="Montant en euros"
-                    onChange={(event) => onPatch(row.key, { amount: event.target.value })}
+                    onChange={(amount) => onPatch(row.key, { amount })}
                   />
                   <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-control text-fg-muted">
                     €
