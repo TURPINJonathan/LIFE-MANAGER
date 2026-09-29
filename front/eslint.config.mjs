@@ -20,4 +20,10 @@ export default tseslint.config(
       'react-hooks/exhaustive-deps': 'error',
     },
   },
+  {
+    files: ['scripts/**/*.{mjs,js,cjs}'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 );

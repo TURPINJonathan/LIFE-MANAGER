@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import {
   BUTTON_VARIANT,
   DIALOG_SIZE,
@@ -22,3 +24,11 @@ export type TypographyVariant = (typeof TYPOGRAPHY_VARIANT)[keyof typeof TYPOGRA
 export type TypographyWeight = keyof typeof TYPOGRAPHY_WEIGHT;
 export type TypographyElement = 'h1' | 'h2' | 'h3' | 'h4' | 'p' | 'span';
 export type UserTheme = (typeof USER_THEME)[keyof typeof USER_THEME];
+
+export type SelectOption = {
+  value: string;
+  label: string;
+  leading?: ReactNode;
+  /** En-tête de section non sélectionnable. */
+  heading?: boolean;
+};

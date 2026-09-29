@@ -16,24 +16,39 @@ type AuthState = {
 let bootstrapPromise: Promise<void> | null = null;
 
 function readStoredToken(): string | null {
-  if (typeof sessionStorage === 'undefined') {
+  if (typeof localStorage === 'undefined') {
     return null;
   }
 
-  return sessionStorage.getItem(TOKEN_STORAGE_KEY);
+  const fromLocal = localStorage.getItem(TOKEN_STORAGE_KEY);
+  if (fromLocal) {
+    return fromLocal;
+  }
+
+  // Migration one-shot depuis l’ancien stockage session.
+  if (typeof sessionStorage !== 'undefined') {
+    const legacy = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+    if (legacy) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, legacy);
+      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+      return legacy;
+    }
+  }
+
+  return null;
 }
 
 function writeStoredToken(token: string | null): void {
-  if (typeof sessionStorage === 'undefined') {
+  if (typeof localStorage === 'undefined') {
     return;
   }
 
   if (token) {
-    sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
     return;
   }
 
-  sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
 export const useAuthStore = create<AuthState>((set) => ({

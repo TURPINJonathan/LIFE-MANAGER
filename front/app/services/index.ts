@@ -1,2 +1,34 @@
 export { ApiError, apiFetch } from './api-client';
+export {
+  archiveAccount,
+  archiveSubAccount,
+  createAccount,
+  createForecast,
+  createSubAccount,
+  createTransaction,
+  deleteForecast,
+  deleteTransaction,
+  deleteTransactionAttachment,
+  duplicateForecast,
+  fetchForecast,
+  fetchForecastStats,
+  fetchForecastStatsDashboard,
+  fetchLedger,
+  listAccounts,
+  updateAccount,
+  updateForecast,
+  updateSubAccount,
+  updateTransaction,
+  uploadTransactionAttachment,
+  type TransactionInput,
+} from './account.service';
 export { fetchMe, loginRequest } from './auth.service';
+export { archiveCategory, createCategory, listCategories, updateCategory } from './category.service';
+export {
+  archiveMerchant,
+  clearMerchantImage,
+  createMerchant,
+  listMerchants,
+  updateMerchant,
+  uploadMerchantImage,
+} from './merchant.service';

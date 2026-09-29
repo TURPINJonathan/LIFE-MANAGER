@@ -1,33 +1,33 @@
-import { Typography } from '@components';
-import { APP_PAGE_GUTTER_CLASSES } from '@constants';
+import { Link } from 'react-router';
+
+import { SectionCard, Typography } from '@components';
+import { APP_PAGE_FILL_CLASSES, APP_PAGE_GUTTER_CLASSES, APP_ROUTE } from '@constants';
 import { useAuthStore } from '@store';
 
 export function HomePage() {
   const user = useAuthStore((state) => state.user);
 
   return (
-    <section className={APP_PAGE_GUTTER_CLASSES}>
-      <Typography variant="headline" className="text-brand dark:text-fg-primary">
-        {user ? `Bonjour ${user.firstName}` : 'Bonjour'}
-      </Typography>
-      <Typography variant="body" className="mt-3 max-w-2xl text-fg-secondary">
-        Life Manager rassemble ici ce qui rythme le quotidien. Les prochains modules suivront le même découpage : une
-        page, un module, des appels API authentifiés.
-      </Typography>
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        <article className="rounded-panel border border-border-subtle bg-elevated p-5 shadow-sm">
-          <Typography variant="title">Comptes</Typography>
-          <Typography variant="body" className="mt-2 text-fg-secondary">
-            Soldes, catégories et pronostics de trésorerie.
-          </Typography>
-        </article>
-        <article className="rounded-panel border border-border-subtle bg-elevated p-5 shadow-sm">
-          <Typography variant="title">Événements</Typography>
-          <Typography variant="body" className="mt-2 text-fg-secondary">
-            Rendez-vous et échéances à ne pas laisser filer.
-          </Typography>
-        </article>
-      </div>
-    </section>
+    <div className={`${APP_PAGE_FILL_CLASSES} overflow-y-auto`} data-app-scroll>
+      <section className={APP_PAGE_GUTTER_CLASSES}>
+        <Typography variant="body" className="max-w-2xl text-fg-secondary">
+          {user
+            ? `${user.firstName}, Life Manager centralise comptes, budgets et événements.`
+            : 'Life Manager centralise comptes, budgets et événements.'}
+        </Typography>
+        <div className="mt-6 grid gap-3 md:grid-cols-2">
+          <Link to={APP_ROUTE.accounts} className="block cursor-pointer no-underline">
+            <SectionCard title="Comptes" icon="account_balance_wallet" iconTint="var(--accent)">
+              <p className="text-body text-fg-secondary">Soldes, opérations et budgets mensuels.</p>
+            </SectionCard>
+          </Link>
+          <Link to={APP_ROUTE.events} className="block cursor-pointer no-underline">
+            <SectionCard title="Événements" icon="event">
+              <p className="text-body text-fg-secondary">Rendez-vous et échéances — bientôt.</p>
+            </SectionCard>
+          </Link>
+        </div>
+      </section>
+    </div>
   );
 }

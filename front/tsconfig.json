@@ -16,6 +16,7 @@
       "@layouts": ["./app/layouts/index.ts"],
       "@pages": ["./app/pages/index.ts"],
       "@categories": ["./app/modules/categories/index.ts"],
+      "@merchants": ["./app/modules/merchants/index.ts"],
       "@accounts": ["./app/modules/accounts/index.ts"],
       "@events": ["./app/modules/events/index.ts"],
       "@security": ["./app/security/index.ts"],

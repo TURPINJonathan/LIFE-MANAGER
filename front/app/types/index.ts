@@ -12,12 +12,30 @@ export type AuthUser = {
 
 export type { CreateEntry, INavAction, INavItem } from './navigation.types';
 export type {
+  Account,
+  Category,
+  CategoryKind,
+  ForecastLine,
+  ForecastLineInput,
+  ForecastStats,
+  ForecastStatsCategory,
+  ForecastStatsPreviousCategory,
+  ForecastTimelinePoint,
+  LedgerPayload,
+  LedgerTransaction,
+  Merchant,
+  MonthlyForecast,
+  PaymentMethod,
+  SubAccount,
+} from './finance.types';
+export type {
   ButtonVariant,
   DialogSize,
   IconButtonVariant,
   LogoVariant,
   NavItemVariant,
   PopoverPlacement,
+  SelectOption,
   SpinnerVariant,
   TypographyElement,
   TypographyVariant,

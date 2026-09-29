@@ -39,7 +39,12 @@ export function Dialog({ isOpen, onClose, title, icon, children, size = DIALOG_S
           </Typography>
           <IconButton variant={ICON_BUTTON_VARIANT.ghost} icon="close" onClick={onClose} aria-label="Fermer" />
         </div>
-        <div className={cn('min-h-0 flex-1 overflow-y-auto', size === DIALOG_SIZE.large && 'flex flex-col')}>
+        <div
+          className={cn(
+            'min-h-0 flex-1 overflow-y-auto',
+            (size === DIALOG_SIZE.large || size === DIALOG_SIZE.wide) && 'flex flex-col',
+          )}
+        >
           {children}
         </div>
       </div>

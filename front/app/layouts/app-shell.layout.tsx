@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router';
 
-import { Button, Dialog, Icon } from '@components';
+import { Button, Dialog, Icon, ToastHost } from '@components';
 import { APP_MAIN_SURFACE_CLASSES, BUTTON_VARIANT, MENU_ITEMS, MENU_ROW_CLASSES, NAV_ITEM_VARIANT } from '@constants';
 import { useAccountMenu, useAppViewportHeight } from '@hooks';
 import { useAuthStore } from '@store';
@@ -25,6 +25,7 @@ export function AppShell() {
       </div>
 
       <Nav variant={NAV_ITEM_VARIANT.tab} />
+      <ToastHost />
 
       <Dialog isOpen={isOpen} onClose={close} title="Menu">
         <div className="flex flex-col gap-stack-sm">

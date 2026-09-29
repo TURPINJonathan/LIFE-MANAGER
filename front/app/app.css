@@ -1,7 +1,29 @@
 @import 'tailwindcss';
 @import './keyframes.css';
+@import 'react-day-picker/style.css';
 
 @variant dark (&:where(.dark, .dark *));
+
+/* UA browsers keep arrow cursor on <button>; force pointer on interactive controls. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='radio']:not(:disabled),
+  [role='option']:not(:disabled),
+  [role='combobox']:not(:disabled),
+  [role='tab']:not([aria-disabled='true']),
+  summary,
+  a[href],
+  label[for] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled='true'],
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
 
 @utility icon-filled {
   font-variation-settings: 'FILL' 1;
@@ -91,6 +113,8 @@
   --color-border-subtle: var(--border-subtle);
   --color-success: var(--success);
   --color-success-strong: var(--success-strong);
+  --color-warning: var(--warning);
+  --color-warning-strong: var(--warning-strong);
   --color-error: var(--error);
   --color-accent-subtle: var(--accent-subtle);
   --color-accent-outline: var(--accent-outline);
@@ -117,6 +141,8 @@
   --border-subtle: #e2e8f0;
   --success: #22c55e;
   --success-strong: #15803d;
+  --warning: #f59e0b;
+  --warning-strong: #d97706;
   --error: #ef4444;
   --disabled-bg: #9ca3af;
   --disabled-border: #d1d5db;
@@ -321,3 +347,53 @@ html.dark body {
   scrollbar-color: var(--border-strong) transparent;
   scrollbar-width: thin;
 }
+
+/* Calendrier DateField (react-day-picker) — tokens du design system */
+.date-field-calendar {
+  --rdp-accent-color: var(--accent);
+  --rdp-accent-background-color: var(--accent-tint);
+  --rdp-today-color: var(--accent);
+  --rdp-selected-border: 2px solid var(--accent);
+  --rdp-day_button-border-radius: var(--radius-control-sm, 0.5rem);
+  --rdp-day-height: 2.25rem;
+  --rdp-day-width: 2.25rem;
+  --rdp-day_button-height: 2.25rem;
+  --rdp-day_button-width: 2.25rem;
+  --rdp-nav-height: 2.25rem;
+  --rdp-nav_button-height: 2rem;
+  --rdp-nav_button-width: 2rem;
+  --rdp-weekday-padding: 0.35rem 0;
+  color: var(--fg-primary);
+}
+
+.date-field-calendar .rdp-root {
+  margin: 0;
+}
+
+.date-field-calendar .rdp-month_caption {
+  font-size: var(--text-body, 0.9375rem);
+  font-weight: 600;
+}
+
+.date-field-calendar .rdp-weekday {
+  color: var(--fg-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.date-field-calendar .rdp-day_button:hover:not([disabled]):not(.rdp-selected *) {
+  background: var(--subtle, color-mix(in oklab, var(--fg-primary) 6%, transparent));
+}
+
+.date-field-calendar .rdp-selected .rdp-day_button {
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+
+.date-field-calendar .rdp-today:not(.rdp-selected) .rdp-day_button {
+  font-weight: 700;
+  color: var(--accent);
+}
+

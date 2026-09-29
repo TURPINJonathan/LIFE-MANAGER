@@ -6,9 +6,12 @@ export default [
       layout('routes/_app.tsx', [
         index('routes/home.tsx'),
         route('comptes', 'routes/accounts.tsx'),
+        route('comptes/:subAccountId', 'routes/account-ledger.tsx'),
         route('evenements', 'routes/events.tsx'),
-        route('categories', 'routes/categories.tsx'),
-        route('parametres', 'routes/settings.tsx'),
+        route('parametres', 'routes/settings.tsx', [
+          index('routes/settings.index.tsx'),
+          route(':section', 'routes/settings.$section.tsx'),
+        ]),
       ]),
     ]),
     layout('routes/_guest.tsx', [route('login', 'routes/login.tsx')]),

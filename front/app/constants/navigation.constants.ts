@@ -7,7 +7,6 @@ export const NAV_ITEMS = [
   { to: APP_ROUTE.home, label: 'Accueil', icon: 'dashboard' },
   { to: APP_ROUTE.accounts, label: 'Comptes', icon: 'account_balance_wallet' },
   { to: APP_ROUTE.events, label: 'Événements', icon: 'event' },
-  { to: APP_ROUTE.categories, label: 'Catégories', icon: 'category' },
 ] as const satisfies readonly INavItem[];
 
 export const CREATE_ENTRIES = [

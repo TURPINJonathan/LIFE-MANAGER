@@ -1,5 +1,5 @@
-import { SettingsPage } from '@pages';
+import { Outlet } from 'react-router';
 
-export default function SettingsRoute() {
-  return <SettingsPage />;
+export default function SettingsLayoutRoute() {
+  return <Outlet />;
 }

@@ -23,7 +23,6 @@ export const DEFAULT_ACCENT: AppAccent = APP_ACCENT.neutral;
 export const ROUTE_ACCENT = [
   { prefix: APP_ROUTE.accounts, accent: APP_ACCENT.accounts },
   { prefix: APP_ROUTE.events, accent: APP_ACCENT.events },
-  { prefix: APP_ROUTE.categories, accent: APP_ACCENT.categories },
   { prefix: APP_ROUTE.settings, accent: APP_ACCENT.settings },
   { prefix: APP_ROUTE.home, accent: APP_ACCENT.neutral },
   { prefix: APP_ROUTE.login, accent: APP_ACCENT.neutral },

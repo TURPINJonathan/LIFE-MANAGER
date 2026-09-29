@@ -12,9 +12,15 @@ interface IPopoverProps {
   placement: PopoverPlacement;
   label: string;
   children: ReactNode;
+  /** Aligne la largeur du panneau sur l’ancre (bottomStart). Défaut : true. */
+  matchAnchorWidth?: boolean;
 }
 
-function getPanelStyle(anchor: HTMLElement, placement: PopoverPlacement): CSSProperties {
+function getPanelStyle(
+  anchor: HTMLElement,
+  placement: PopoverPlacement,
+  matchAnchorWidth: boolean,
+): CSSProperties {
   const rect = anchor.getBoundingClientRect();
 
   if (placement === POPOVER_PLACEMENT.rightStart) {
@@ -29,7 +35,7 @@ function getPanelStyle(anchor: HTMLElement, placement: PopoverPlacement): CSSPro
     return {
       top: rect.bottom + POPOVER_OFFSET,
       left: rect.left,
-      minWidth: rect.width,
+      ...(matchAnchorWidth ? { width: rect.width } : {}),
       maxHeight: window.innerHeight - rect.bottom - 2 * POPOVER_OFFSET,
     };
   }
@@ -41,7 +47,15 @@ function getPanelStyle(anchor: HTMLElement, placement: PopoverPlacement): CSSPro
   };
 }
 
-export function Popover({ isOpen, onClose, anchorRef, placement, label, children }: IPopoverProps) {
+export function Popover({
+  isOpen,
+  onClose,
+  anchorRef,
+  placement,
+  label,
+  children,
+  matchAnchorWidth = true,
+}: IPopoverProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [style, setStyle] = useState<CSSProperties | null>(null);
 
@@ -55,13 +69,13 @@ export function Popover({ isOpen, onClose, anchorRef, placement, label, children
 
     function reposition(): void {
       const anchor = anchorRef.current;
-      if (anchor) setStyle(getPanelStyle(anchor, placement));
+      if (anchor) setStyle(getPanelStyle(anchor, placement, matchAnchorWidth));
     }
 
     reposition();
     window.addEventListener('resize', reposition);
     return () => window.removeEventListener('resize', reposition);
-  }, [isOpen, placement, anchorRef]);
+  }, [isOpen, placement, anchorRef, matchAnchorWidth]);
 
   if (!isOpen || typeof document === 'undefined') return null;
 
