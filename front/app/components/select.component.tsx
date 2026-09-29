@@ -143,6 +143,7 @@ function OptionList({
             >
               {option.leading}
               <span className="min-w-0 flex-1 truncate">{option.label}</span>
+              {option.trailing ? <span className="ms-2 shrink-0">{option.trailing}</span> : null}
               {selected && <Icon name="check" className="shrink-0 text-icon-sm text-accent" />}
             </button>
           );
@@ -320,6 +321,7 @@ export function Select({
       >
         {selectedOption?.leading}
         <span className="min-w-0 flex-1 truncate text-left">{selectedOption?.label ?? value}</span>
+        {selectedOption?.trailing ? <span className="ms-2 shrink-0">{selectedOption.trailing}</span> : null}
         <Icon name={searchable ? 'search' : 'expand_more'} className="ml-auto shrink-0 text-fg-muted" />
       </button>
 

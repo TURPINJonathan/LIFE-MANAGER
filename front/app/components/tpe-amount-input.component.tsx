@@ -16,6 +16,7 @@ type TpeAmountInputProps = {
   onBlur?: () => void;
   className?: string;
   disabled?: boolean;
+  autoFocus?: boolean;
   'aria-label'?: string;
 };
 
@@ -30,12 +31,23 @@ export function TpeAmountInput({
   onBlur,
   className,
   disabled,
+  autoFocus,
   'aria-label': ariaLabel,
 }: TpeAmountInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const cents = centsFromValue(value);
   const display = formatTpeAmount(cents);
+
+  useEffect(() => {
+    if (!autoFocus || disabled) {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [autoFocus, disabled]);
 
   useEffect(() => {
     const node = inputRef.current;

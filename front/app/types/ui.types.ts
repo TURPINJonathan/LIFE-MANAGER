@@ -29,6 +29,8 @@ export type SelectOption = {
   value: string;
   label: string;
   leading?: ReactNode;
+  /** Contenu à droite (ex. montant M−1). */
+  trailing?: ReactNode;
   /** En-tête de section non sélectionnable. */
   heading?: boolean;
 };

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { Button, ConfirmDialog, EmptyState, Icon, IconButton, Tooltip, Typography } from '@components';
-import { BUTTON_VARIANT, ICON_BUTTON_VARIANT, currentYearMonth, shiftYearMonth } from '@constants';
+import { Button, ConfirmDialog, Dialog, Icon, IconButton, Tooltip, Typography } from '@components';
+import { BUTTON_VARIANT, DIALOG_SIZE, ICON_BUTTON_VARIANT, currentYearMonth, shiftYearMonth } from '@constants';
 import { CategoryQuickCreate } from '@categories';
 import {
   ApiError,
@@ -33,11 +33,30 @@ import {
 } from '@utils';
 
 import { BalanceTimelineChart } from './balance-timeline-chart.component';
-import { defaultCategoryId } from './category-select-options';
+import {
+  forecastLineToInput,
+  forecastToLineInputs,
+  isExpenseStatsRow,
+  linesForCategoryGroup,
+  previousMonthKey,
+  type BudgetTone,
+} from './forecast-budget.utils';
+import { ForecastCategoryDialog } from './forecast-category-dialog.component';
 import { ForecastEditor, type ForecastDraftLine } from './forecast-editor.component';
+import {
+  emptyLineForm,
+  ForecastLineDialog,
+  type ForecastLineEditContext,
+  type ForecastLineFormValues,
+} from './forecast-line-dialog.component';
 import { formatMonthLabel } from './forecast.utils';
 
 type DraftLine = ForecastDraftLine;
+
+type LineDialogState =
+  | null
+  | { mode: 'create'; tone: BudgetTone; seed?: Partial<ForecastLineFormValues> }
+  | { mode: 'edit'; lineId: string };
 
 type ForecastPanelProps = {
   subAccountId: string;
@@ -49,7 +68,6 @@ type ForecastPanelProps = {
 };
 
 export type ForecastChromeActions = {
-  onEdit: () => void;
   onDelete: () => void;
   busy: boolean;
 };
@@ -138,20 +156,6 @@ function aggregateStatsCategories(rows: ForecastStatsCategory[]): AggregatedStat
     });
 }
 
-function isExpenseStatsRow(
-  row: Pick<AggregatedStatsCategory, 'plannedSignedCents' | 'categoryKind' | 'flow'>,
-): boolean {
-  if (row.plannedSignedCents < 0) return true;
-  if (row.plannedSignedCents > 0) return false;
-  if (row.categoryKind === 'expense') return true;
-  if (row.categoryKind === 'income') return false;
-  return row.flow === 'debit';
-}
-
-function previousMonthKey(categoryId: string, flow: 'credit' | 'debit' | null | undefined): string {
-  return `${categoryId}:${flow ?? ''}`;
-}
-
 export function ForecastPanel({
   subAccountId,
   categories,
@@ -173,14 +177,16 @@ export function ForecastPanel({
   };
   const [forecast, setForecast] = useState<MonthlyForecast | null>(null);
   const [stats, setStats] = useState<ForecastStats | null>(null);
-  const [draft, setDraft] = useState<DraftLine[]>([]);
-  const [draftBaseline, setDraftBaseline] = useState<DraftLine[]>([]);
-  const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [categoryCreateForKey, setCategoryCreateForKey] = useState<string | null>(null);
+  const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [lineDialog, setLineDialog] = useState<LineDialogState>(null);
+  const [categoryDialogRow, setCategoryDialogRow] = useState<AggregatedStatsCategory | null>(null);
+  const [spreadsheetOpen, setSpreadsheetOpen] = useState(false);
+  const [spreadsheetDraft, setSpreadsheetDraft] = useState<DraftLine[]>([]);
+  const [spreadsheetBaseline, setSpreadsheetBaseline] = useState<DraftLine[]>([]);
 
   const reload = async (month = yearMonth) => {
     if (!token) return;
@@ -192,9 +198,6 @@ export function ForecastPanel({
       const fc = st.hasForecast ? await fetchForecast(token, subAccountId, month) : null;
       setForecast(fc);
       setStats(st);
-      setEditing(false);
-      setDraft([]);
-      setDraftBaseline([]);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Chargement impossible.');
     } finally {
@@ -207,38 +210,69 @@ export function ForecastPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, subAccountId, yearMonth]);
 
-  const startCreate = () => {
-    const initial: DraftLine[] = [
-      {
-        key: crypto.randomUUID(),
-        categoryId: defaultCategoryId(categories),
-        amount: '',
-        flow: 'debit',
-        scheduledDay: null,
-      },
-    ];
-    setDraft(initial);
-    setDraftBaseline(initial.map((row) => ({ ...row })));
-    setEditing(true);
+  const formValuesToInput = (values: ForecastLineFormValues): ForecastLineInput | null => {
+    const cents = parseEurosToCents(values.amount);
+    if (cents === null || cents <= 0 || !values.categoryId) {
+      return null;
+    }
+    const category = categories.find((item) => item.id === values.categoryId);
+    return {
+      categoryId: values.categoryId,
+      plannedAmountCents: cents,
+      flow: category?.kind === 'both' ? values.flow : null,
+      scheduledDay: values.scheduledDay,
+    };
   };
 
-  const startEdit = useCallback(() => {
-    if (!forecast) return;
-    const initial = forecast.lines.map((line) => ({
-      key: line.id,
-      categoryId: line.categoryId,
-      amount: centsToInput(line.plannedAmountCents),
-      flow: line.flow ?? 'debit',
-      scheduledDay: line.scheduledDay ?? null,
-    }));
-    setDraft(initial);
-    setDraftBaseline(initial.map((row) => ({ ...row })));
-    setEditing(true);
-  }, [forecast]);
+  const persistLines = async (lines: ForecastLineInput[]) => {
+    if (!token) return;
+    setBusy(true);
+    setError(null);
+    try {
+      if (lines.length === 0 && forecast) {
+        await deleteForecast(token, forecast.id);
+        toastSuccess('Budget supprimé.');
+      } else if (forecast) {
+        await updateForecast(token, forecast.id, { lines });
+        toastSuccess('Budget enregistré.');
+      } else if (lines.length > 0) {
+        await createForecast(token, subAccountId, { yearMonth, lines });
+        toastSuccess('Budget enregistré.');
+      }
+      await reload();
+    } catch (err) {
+      toastFromError(err, 'Enregistrement impossible.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  const toInputs = (): ForecastLineInput[] | null => {
+  const openSpreadsheet = () => {
+    const initial: DraftLine[] = forecast
+      ? forecast.lines.map((line) => ({
+          key: line.id,
+          categoryId: line.categoryId,
+          amount: centsToInput(line.plannedAmountCents),
+          flow: line.flow ?? 'debit',
+          scheduledDay: line.scheduledDay ?? null,
+        }))
+      : [
+          {
+            key: crypto.randomUUID(),
+            categoryId: '',
+            amount: '',
+            flow: 'debit' as const,
+            scheduledDay: null,
+          },
+        ];
+    setSpreadsheetDraft(initial);
+    setSpreadsheetBaseline(initial.map((row) => ({ ...row })));
+    setSpreadsheetOpen(true);
+  };
+
+  const spreadsheetToInputs = (): ForecastLineInput[] | null => {
     const lines: ForecastLineInput[] = [];
-    for (const row of draft) {
+    for (const row of spreadsheetDraft) {
       if (!row.categoryId) {
         setError('Chaque ligne doit avoir une catégorie.');
         return null;
@@ -259,25 +293,11 @@ export function ForecastPanel({
     return lines;
   };
 
-  const save = async () => {
-    if (!token) return;
-    const lines = toInputs();
+  const saveSpreadsheet = async () => {
+    const lines = spreadsheetToInputs();
     if (!lines) return;
-    setBusy(true);
-    setError(null);
-    try {
-      if (forecast) {
-        await updateForecast(token, forecast.id, { lines });
-      } else {
-        await createForecast(token, subAccountId, { yearMonth, lines });
-      }
-      toastSuccess('Budget enregistré.');
-      await reload();
-    } catch (err) {
-      toastFromError(err, 'Enregistrement impossible.');
-    } finally {
-      setBusy(false);
-    }
+    await persistLines(lines);
+    setSpreadsheetOpen(false);
   };
 
   const onDuplicate = async () => {
@@ -315,17 +335,16 @@ export function ForecastPanel({
 
   useEffect(() => {
     if (!onChromeActionsChange) return;
-    if (!forecast || editing) {
+    if (!forecast) {
       onChromeActionsChange(null);
       return;
     }
     onChromeActionsChange({
-      onEdit: startEdit,
       onDelete: () => setDeleteOpen(true),
       busy,
     });
     return () => onChromeActionsChange(null);
-  }, [onChromeActionsChange, forecast, editing, busy, startEdit]);
+  }, [onChromeActionsChange, forecast, busy]);
 
   const prevMonthLabel = useMemo(() => formatMonthLabel(shiftYearMonth(yearMonth, -1)), [yearMonth]);
   const aggregatedCategories = useMemo(() => aggregateStatsCategories(stats?.categories ?? []), [stats?.categories]);
@@ -356,27 +375,12 @@ export function ForecastPanel({
     () => (stats?.previousMonth?.orphans ?? []).filter((row) => row.isExpense),
     [stats?.previousMonth?.orphans],
   );
-  const draftCategoryKeys = useMemo(() => {
-    const keys = new Set<string>();
-    for (const row of draft) {
-      const category = categories.find((item) => item.id === row.categoryId);
-      const flow = category?.kind === 'both' ? row.flow : null;
-      keys.add(previousMonthKey(row.categoryId, flow));
-    }
-    return keys;
-  }, [draft, categories]);
-  const editorOrphans = useMemo(
-    () =>
-      (stats?.previousMonth?.orphans ?? []).filter(
-        (row) => !draftCategoryKeys.has(previousMonthKey(row.categoryId, row.flow)),
-      ),
-    [stats?.previousMonth?.orphans, draftCategoryKeys],
-  );
+  const spreadsheetOrphans = stats?.previousMonth?.orphans ?? [];
 
-  const draftTotals = useMemo(() => {
+  const spreadsheetTotals = useMemo(() => {
     let incomeCents = 0;
     let expenseCents = 0;
-    for (const row of draft) {
+    for (const row of spreadsheetDraft) {
       const cents = parseEurosToCents(row.amount);
       if (cents === null || cents < 0) continue;
       const category = categories.find((item) => item.id === row.categoryId);
@@ -384,61 +388,13 @@ export function ForecastPanel({
       if (isCredit) incomeCents += cents;
       else expenseCents += cents;
     }
-    return { incomeCents, expenseCents, netCents: incomeCents - expenseCents, count: draft.length };
-  }, [categories, draft]);
+    return { incomeCents, expenseCents, netCents: incomeCents - expenseCents, count: spreadsheetDraft.length };
+  }, [categories, spreadsheetDraft]);
 
-  const patchDraft = (key: string, patch: Partial<DraftLine>) => {
-    setDraft((rows) => rows.map((row) => (row.key === key ? { ...row, ...patch } : row)));
-  };
-
-  const addDraftLine = () => {
-    setDraft((rows) => [
-      ...rows,
-      {
-        key: crypto.randomUUID(),
-        categoryId: defaultCategoryId(categories),
-        amount: '',
-        flow: 'debit',
-        scheduledDay: null,
-      },
-    ]);
-  };
-
-  const addOrphanFromPrevious = (orphan: ForecastStatsPreviousCategory) => {
-    const seedCents =
-      orphan.previousPlannedAmountCents > 0 ? orphan.previousPlannedAmountCents : orphan.previousActualAmountCents;
-    const orphanLine: DraftLine = {
-      key: crypto.randomUUID(),
-      categoryId: orphan.categoryId,
-      amount: centsToInput(seedCents),
-      flow: orphan.flow ?? (orphan.isExpense ? 'debit' : 'credit'),
-      scheduledDay: null,
-    };
-
-    if (editing) {
-      setDraft((rows) => [...rows, orphanLine]);
-      return;
-    }
-
-    const base: DraftLine[] = forecast
-      ? forecast.lines.map((line) => ({
-          key: line.id,
-          categoryId: line.categoryId,
-          amount: centsToInput(line.plannedAmountCents),
-          flow: line.flow ?? 'debit',
-          scheduledDay: line.scheduledDay ?? null,
-        }))
-      : [];
-    const next = [...base, orphanLine];
-    setDraft(next);
-    setDraftBaseline(base.map((row) => ({ ...row })));
-    setEditing(true);
-  };
-
-  const draftDirty = useMemo(() => {
-    if (draft.length !== draftBaseline.length) return true;
-    return draft.some((row, index) => {
-      const baseline = draftBaseline[index];
+  const spreadsheetDirty = useMemo(() => {
+    if (spreadsheetDraft.length !== spreadsheetBaseline.length) return true;
+    return spreadsheetDraft.some((row, index) => {
+      const baseline = spreadsheetBaseline[index];
       return (
         !baseline ||
         row.key !== baseline.key ||
@@ -448,7 +404,147 @@ export function ForecastPanel({
         row.scheduledDay !== baseline.scheduledDay
       );
     });
-  }, [draft, draftBaseline]);
+  }, [spreadsheetDraft, spreadsheetBaseline]);
+
+  const addOrphanFromPrevious = (orphan: ForecastStatsPreviousCategory) => {
+    const tone: BudgetTone = orphan.isExpense ? 'expense' : 'income';
+    const seedCents =
+      orphan.previousPlannedAmountCents > 0 ? orphan.previousPlannedAmountCents : orphan.previousActualAmountCents;
+    setLineDialog({
+      mode: 'create',
+      tone,
+      seed: {
+        categoryId: orphan.categoryId,
+        amount: centsToInput(seedCents),
+        flow: orphan.flow ?? (tone === 'income' ? 'credit' : 'debit'),
+        scheduledDay: null,
+      },
+    });
+  };
+
+  const submitLineDialog = async (values: ForecastLineFormValues, andContinue = false) => {
+    const input = formValuesToInput(values);
+    if (!input) return;
+
+    if (lineDialog?.mode === 'edit') {
+      if (!forecast) return;
+      const next = forecast.lines.map((line) => (line.id === lineDialog.lineId ? input : forecastLineToInput(line)));
+      await persistLines(next);
+      setLineDialog(null);
+      return;
+    }
+
+    const existing = forecast ? forecastToLineInputs(forecast.lines) : [];
+    await persistLines([...existing, input]);
+
+    if (andContinue && lineDialog?.mode === 'create') {
+      setLineDialog({
+        mode: 'create',
+        tone: lineDialog.tone,
+      });
+      return;
+    }
+
+    setLineDialog(null);
+  };
+
+  const deleteLineFromDialog = async () => {
+    if (!lineDialog || lineDialog.mode !== 'edit' || !forecast) return;
+    const remaining = forecast.lines.filter((line) => line.id !== lineDialog.lineId);
+    await persistLines(forecastToLineInputs(remaining));
+    setLineDialog(null);
+  };
+
+  const deleteLineById = async (lineId: string) => {
+    if (!forecast) return;
+    const remaining = forecast.lines.filter((line) => line.id !== lineId);
+    await persistLines(forecastToLineInputs(remaining));
+  };
+
+  const lineDialogInitial = useMemo((): ForecastLineFormValues => {
+    if (!lineDialog) return emptyLineForm('expense');
+    if (lineDialog.mode === 'edit' && forecast) {
+      const line = forecast.lines.find((item) => item.id === lineDialog.lineId);
+      if (line) {
+        return {
+          categoryId: line.categoryId,
+          amount: centsToInput(line.plannedAmountCents),
+          flow: line.flow ?? 'debit',
+          scheduledDay: line.scheduledDay,
+        };
+      }
+    }
+    const tone = lineDialog.mode === 'create' ? lineDialog.tone : 'expense';
+    return { ...emptyLineForm(tone), ...(lineDialog.mode === 'create' ? (lineDialog.seed ?? {}) : {}) };
+  }, [lineDialog, forecast]);
+
+  const lineDialogTone = useMemo((): BudgetTone => {
+    if (!lineDialog) return 'expense';
+    if (lineDialog.mode === 'create') return lineDialog.tone;
+    const line = forecast?.lines.find((item) => item.id === lineDialog.lineId);
+    if (!line) return 'expense';
+    if (line.categoryKind === 'expense') return 'expense';
+    if (line.categoryKind === 'income') return 'income';
+    return line.flow === 'credit' ? 'income' : 'expense';
+  }, [lineDialog, forecast]);
+
+  const lineDialogTitle =
+    lineDialog?.mode === 'edit'
+      ? 'Modifier l’échéance'
+      : lineDialogTone === 'income'
+        ? 'Nouveau revenu'
+        : 'Nouvelle dépense';
+
+  const categoryDialogLines = useMemo(() => {
+    if (!categoryDialogRow || !forecast) return [];
+    return linesForCategoryGroup(forecast.lines, categoryDialogRow.categoryId, categoryDialogRow.flow);
+  }, [categoryDialogRow, forecast]);
+
+  const lineDialogEditContext = useMemo((): ForecastLineEditContext | null => {
+    if (!lineDialog || lineDialog.mode !== 'edit' || !forecast) return null;
+    const line = forecast.lines.find((item) => item.id === lineDialog.lineId);
+    if (!line) return null;
+
+    const siblings = linesForCategoryGroup(
+      forecast.lines,
+      line.categoryId,
+      line.categoryKind === 'both' ? line.flow : null,
+    );
+    const aggregated =
+      incomeCategories.find(
+        (row) =>
+          row.categoryId === line.categoryId &&
+          (row.flow ?? null) === (line.categoryKind === 'both' ? line.flow : null),
+      ) ??
+      expenseCategories.find(
+        (row) =>
+          row.categoryId === line.categoryId &&
+          (row.flow ?? null) === (line.categoryKind === 'both' ? line.flow : null),
+      );
+
+    return {
+      categoryName: aggregated?.categoryName ?? line.categoryName,
+      categoryIcon: aggregated?.categoryIcon ?? line.categoryIcon,
+      categoryColor: aggregated?.categoryColor ?? line.categoryColor,
+      plannedCents: aggregated?.plannedAmountCents ?? siblings.reduce((sum, item) => sum + item.plannedAmountCents, 0),
+      actualCents: aggregated?.actualAmountCents ?? 0,
+      consumptionPercent: aggregated?.consumptionPercent ?? 0,
+      overBudget: aggregated?.overBudget ?? false,
+      siblingLines: siblings,
+      editingLineId: line.id,
+    };
+  }, [lineDialog, forecast, incomeCategories, expenseCategories]);
+
+  const openCategoryOrEdit = (row: AggregatedStatsCategory) => {
+    if (!forecast) return;
+    const lines = linesForCategoryGroup(forecast.lines, row.categoryId, row.flow);
+    if (lines.length === 1) {
+      setCategoryDialogRow(null);
+      setLineDialog({ mode: 'edit', lineId: lines[0]!.id });
+      return;
+    }
+    setCategoryDialogRow(row);
+  };
 
   return (
     <div className="mt-4 flex flex-col gap-4">
@@ -469,6 +565,29 @@ export function ForecastPanel({
             aria-label="Mois suivant"
             onClick={() => setYearMonth((value) => shiftYearMonth(value, 1))}
           />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!forecast ? (
+            <Button
+              type="button"
+              variant={BUTTON_VARIANT.success}
+              fullWidth={false}
+              className="h-9 w-auto px-3 text-control"
+              loading={busy}
+              onClick={() => void onDuplicate()}
+            >
+              Dupliquer {prevMonthLabel}
+            </Button>
+          ) : null}
+          <Tooltip content="Vue tableur — édition groupée">
+            <IconButton
+              variant={ICON_BUTTON_VARIANT.ghost}
+              icon="table_rows"
+              aria-label="Vue tableur"
+              disabled={busy}
+              onClick={openSpreadsheet}
+            />
+          </Tooltip>
         </div>
       </div>
 
@@ -491,63 +610,17 @@ export function ForecastPanel({
 
       {loading ? (
         <p className="text-body text-fg-muted">Chargement…</p>
-      ) : editing ? (
-        <ForecastEditor
-          isNew={!forecast}
-          busy={busy}
-          draft={draft}
-          categories={categories}
-          daysInMonth={stats?.meta.daysInMonth}
-          totals={draftTotals}
-          previousByKey={previousByKey}
-          previousMonthLabel={prevMonthLabel}
-          orphans={editorOrphans}
-          canReset={draftDirty}
-          onCancel={() => {
-            setEditing(false);
-            setDraft([]);
-            setDraftBaseline([]);
-            setError(null);
-          }}
-          onReset={() => setDraft(draftBaseline.map((row) => ({ ...row })))}
-          onSave={() => void save()}
-          onAdd={addDraftLine}
-          onRemove={(key) => setDraft((rows) => rows.filter((item) => item.key !== key))}
-          onPatch={patchDraft}
-          onCreateCategory={setCategoryCreateForKey}
-          onAddOrphan={addOrphanFromPrevious}
-        />
-      ) : !forecast ? (
-        <EmptyState
-          icon="calendar_month"
-          title={`Aucun budget pour ${formatMonthLabel(yearMonth)}`}
-          message="Planifie revenus et dépenses, ou reprends le mois précédent en un clic."
-          action={
-            <div className="mt-2 flex flex-wrap justify-center gap-2">
-              <Button
-                type="button"
-                variant={BUTTON_VARIANT.success}
-                fullWidth={false}
-                className="w-auto px-4"
-                loading={busy}
-                onClick={() => void onDuplicate()}
-              >
-                Dupliquer {prevMonthLabel}
-              </Button>
-              <Button
-                type="button"
-                variant={BUTTON_VARIANT.secondary}
-                fullWidth={false}
-                className="w-auto px-4"
-                onClick={startCreate}
-              >
-                Créer un budget vide
-              </Button>
-            </div>
-          }
-        />
       ) : (
         <>
+          {!forecast ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-panel border border-dashed border-accent/30 bg-accent-tint/40 px-4 py-3">
+              <p className="text-control text-fg-secondary">
+                Pas encore de budget pour ce mois — ajoute une ligne avec <strong>+</strong> ou duplique{' '}
+                {prevMonthLabel}.
+              </p>
+            </div>
+          ) : null}
+
           {stats && (
             <div className="grid gap-3 lg:grid-cols-2 lg:items-stretch">
               <div className="grid h-full min-h-64 grid-cols-2 gap-3 sm:grid-cols-3 sm:grid-rows-2">
@@ -622,7 +695,9 @@ export function ForecastPanel({
                 rows={incomeCategories}
                 orphans={incomeOrphans}
                 previousByKey={previousByKey}
-                emptyLabel="Aucun revenu planifié ce mois."
+                emptyLabel="Aucun revenu planifié — appuie sur + pour commencer."
+                onAdd={() => setLineDialog({ mode: 'create', tone: 'income' })}
+                onOpenCategory={openCategoryOrEdit}
                 onAddOrphan={addOrphanFromPrevious}
               />
               <ForecastCategoryColumn
@@ -637,7 +712,9 @@ export function ForecastPanel({
                 rows={expenseCategories}
                 orphans={expenseOrphans}
                 previousByKey={previousByKey}
-                emptyLabel="Aucune dépense planifiée ce mois."
+                emptyLabel="Aucune dépense planifiée — appuie sur + pour commencer."
+                onAdd={() => setLineDialog({ mode: 'create', tone: 'expense' })}
+                onOpenCategory={openCategoryOrEdit}
                 onAddOrphan={addOrphanFromPrevious}
               />
             </div>
@@ -668,17 +745,110 @@ export function ForecastPanel({
         </>
       )}
 
+      <ForecastLineDialog
+        open={lineDialog !== null}
+        mode={lineDialog?.mode ?? 'create'}
+        tone={lineDialogTone}
+        title={lineDialogTitle}
+        categories={categories}
+        daysInMonth={stats?.meta.daysInMonth}
+        busy={busy}
+        initial={lineDialogInitial}
+        editContext={lineDialogEditContext}
+        previousByKey={previousByKey}
+        previousMonthLabel={prevMonthLabel}
+        onClose={() => setLineDialog(null)}
+        onSubmit={(values) => void submitLineDialog(values)}
+        onSubmitAndContinue={
+          lineDialog?.mode === 'create' ? (values) => void submitLineDialog(values, true) : undefined
+        }
+        onDelete={lineDialog?.mode === 'edit' ? () => void deleteLineFromDialog() : undefined}
+        onCreateCategory={() => setCategoryCreateOpen(true)}
+      />
+
+      {categoryDialogRow ? (
+        <ForecastCategoryDialog
+          open={categoryDialogRow !== null}
+          onClose={() => setCategoryDialogRow(null)}
+          tone={isExpenseStatsRow(categoryDialogRow) ? 'expense' : 'income'}
+          categoryName={categoryDialogRow.categoryName}
+          categoryIcon={categoryDialogRow.categoryIcon}
+          categoryColor={categoryDialogRow.categoryColor}
+          plannedCents={categoryDialogRow.plannedAmountCents}
+          actualCents={categoryDialogRow.actualAmountCents}
+          consumptionPercent={categoryDialogRow.consumptionPercent}
+          overBudget={categoryDialogRow.overBudget}
+          lines={categoryDialogLines}
+          busy={busy}
+          onAddInstallment={() => {
+            const tone = isExpenseStatsRow(categoryDialogRow) ? 'expense' : 'income';
+            setLineDialog({
+              mode: 'create',
+              tone,
+              seed: {
+                categoryId: categoryDialogRow.categoryId,
+                flow: categoryDialogRow.flow ?? (tone === 'income' ? 'credit' : 'debit'),
+                scheduledDay: null,
+                amount: '',
+              },
+            });
+          }}
+          onEditLine={(lineId) => {
+            setCategoryDialogRow(null);
+            setLineDialog({ mode: 'edit', lineId });
+          }}
+          onDeleteLine={(lineId) => void deleteLineById(lineId)}
+        />
+      ) : null}
+
+      <Dialog
+        isOpen={spreadsheetOpen}
+        onClose={() => setSpreadsheetOpen(false)}
+        title={`Vue tableur — ${formatMonthLabel(yearMonth)}`}
+        icon="table_rows"
+        size={DIALOG_SIZE.wide}
+      >
+        <ForecastEditor
+          isNew={!forecast}
+          busy={busy}
+          draft={spreadsheetDraft}
+          categories={categories}
+          daysInMonth={stats?.meta.daysInMonth}
+          totals={spreadsheetTotals}
+          previousByKey={previousByKey}
+          previousMonthLabel={prevMonthLabel}
+          orphans={spreadsheetOrphans}
+          canReset={spreadsheetDirty}
+          onCancel={() => setSpreadsheetOpen(false)}
+          onReset={() => setSpreadsheetDraft(spreadsheetBaseline.map((row) => ({ ...row })))}
+          onSave={() => void saveSpreadsheet()}
+          onAdd={() =>
+            setSpreadsheetDraft((rows) => [
+              ...rows,
+              {
+                key: crypto.randomUUID(),
+                categoryId: '',
+                amount: '',
+                flow: 'debit',
+                scheduledDay: null,
+              },
+            ])
+          }
+          onRemove={(key) => setSpreadsheetDraft((rows) => rows.filter((item) => item.key !== key))}
+          onPatch={(key, patch) =>
+            setSpreadsheetDraft((rows) => rows.map((row) => (row.key === key ? { ...row, ...patch } : row)))
+          }
+          onCreateCategory={() => setCategoryCreateOpen(true)}
+          onAddOrphan={addOrphanFromPrevious}
+        />
+      </Dialog>
+
       <CategoryQuickCreate
-        open={categoryCreateForKey !== null}
-        onClose={() => setCategoryCreateForKey(null)}
+        open={categoryCreateOpen}
+        onClose={() => setCategoryCreateOpen(false)}
         onCreated={(category) => {
           onCategoryCreated?.(category);
-          if (categoryCreateForKey) {
-            setDraft((rows) =>
-              rows.map((row) => (row.key === categoryCreateForKey ? { ...row, categoryId: category.id } : row)),
-            );
-          }
-          setCategoryCreateForKey(null);
+          setCategoryCreateOpen(false);
         }}
       />
     </div>
@@ -773,6 +943,8 @@ function ForecastCategoryColumn({
   orphans,
   previousByKey,
   emptyLabel,
+  onAdd,
+  onOpenCategory,
   onAddOrphan,
 }: {
   title: string;
@@ -787,6 +959,8 @@ function ForecastCategoryColumn({
   orphans: ForecastStatsPreviousCategory[];
   previousByKey: Map<string, ForecastStatsPreviousCategory>;
   emptyLabel: string;
+  onAdd: () => void;
+  onOpenCategory: (row: AggregatedStatsCategory) => void;
   onAddOrphan: (orphan: ForecastStatsPreviousCategory) => void;
 }) {
   return (
@@ -817,6 +991,13 @@ function ForecastCategoryColumn({
             </span>
           </Tooltip>
           <span className="rounded-full bg-subtle px-2 py-0.5 text-control text-fg-muted">{rows.length}</span>
+          <IconButton
+            variant={ICON_BUTTON_VARIANT.ghost}
+            icon="add"
+            aria-label={`Ajouter ${tone === 'income' ? 'un revenu' : 'une dépense'}`}
+            className={cn(tone === 'income' ? 'text-success-strong' : 'text-error')}
+            onClick={onAdd}
+          />
         </div>
       </header>
 
@@ -836,6 +1017,7 @@ function ForecastCategoryColumn({
                 previousByKey.get(previousMonthKey(row.categoryId, null))
               }
               previousMonthLabel={previousMonthLabel}
+              onOpen={() => onOpenCategory(row)}
             />
           ))}
           {orphans.map((orphan) => (
@@ -857,11 +1039,13 @@ function ForecastCategoryRow({
   tone,
   previous,
   previousMonthLabel,
+  onOpen,
 }: {
   row: AggregatedStatsCategory;
   tone: 'income' | 'expense';
   previous?: ForecastStatsPreviousCategory;
   previousMonthLabel: string;
+  onOpen: () => void;
 }) {
   const remainingLabel =
     row.remainingCents >= 0
@@ -870,62 +1054,70 @@ function ForecastCategoryRow({
   const daysLabel = row.scheduledDays.length > 0 ? ` · j.${row.scheduledDays.join(', ')}` : '';
 
   return (
-    <li className="rounded-control border border-border-subtle bg-page/70 px-2.5 py-2 dark:bg-page/20">
-      <div className="flex items-center gap-2">
-        <span
-          className="flex size-7 shrink-0 items-center justify-center rounded-full text-white"
-          style={{ backgroundColor: row.categoryColor }}
-        >
-          <Icon name={row.categoryIcon} className="text-[13px]!" />
-        </span>
+    <li>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="w-full cursor-pointer rounded-control border border-border-subtle bg-page/70 px-2.5 py-2 text-left transition-colors hover:border-accent/40 hover:bg-accent-tint/30 dark:bg-page/20 dark:hover:bg-page/35"
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className="flex size-7 shrink-0 items-center justify-center rounded-full text-white"
+            style={{ backgroundColor: row.categoryColor }}
+          >
+            <Icon name={row.categoryIcon} className="text-[13px]!" />
+          </span>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-2">
-            <p className="min-w-0 truncate text-control font-semibold text-fg-primary">
-              {row.categoryName}
-              <span className="font-normal text-fg-muted">{daysLabel}</span>
-            </p>
-            <div className="flex shrink-0 items-center gap-1.5 text-control tabular-nums text-fg-muted">
-              <p>
-                <span className={cn('font-semibold', tone === 'income' ? 'text-success-strong' : 'text-error')}>
-                  {formatCents(Math.abs(row.actualSignedCents))}
-                </span>
-                <span className="text-fg-muted"> / {formatCents(row.plannedAmountCents)}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="min-w-0 truncate text-control font-semibold text-fg-primary">
+                {row.categoryName}
+                <span className="font-normal text-fg-muted">{daysLabel}</span>
               </p>
-              <Tooltip
-                content={`${previousMonthLabel} — réalisé ${formatCents(previous?.previousActualAmountCents ?? 0)} · planifié ${formatCents(previous?.previousPlannedAmountCents ?? 0)}`}
-              >
-                <span
-                  className="inline-flex cursor-help text-fg-muted"
-                  aria-label={`Mois précédent : ${previousMonthLabel}`}
+              <div className="flex shrink-0 items-center gap-1.5 text-control tabular-nums text-fg-muted">
+                <p>
+                  <span className={cn('font-semibold', tone === 'income' ? 'text-success-strong' : 'text-error')}>
+                    {formatCents(Math.abs(row.actualSignedCents))}
+                  </span>
+                  <span className="text-fg-muted"> / {formatCents(row.plannedAmountCents)}</span>
+                </p>
+                <Tooltip
+                  content={`${previousMonthLabel} — réalisé ${formatCents(previous?.previousActualAmountCents ?? 0)} · planifié ${formatCents(previous?.previousPlannedAmountCents ?? 0)}`}
                 >
-                  <Icon name="history" className="text-[14px]!" />
-                </span>
-              </Tooltip>
+                  <span
+                    className="inline-flex cursor-help text-fg-muted"
+                    aria-label={`Mois précédent : ${previousMonthLabel}`}
+                  >
+                    <Icon name="history" className="text-[14px]!" />
+                  </span>
+                </Tooltip>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-1 flex items-center gap-2">
-            <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-subtle">
-              <div
+            <div className="mt-1 flex items-center gap-2">
+              <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-subtle">
+                <div
+                  className={cn(
+                    'h-full rounded-full',
+                    row.overBudget ? 'bg-error' : tone === 'income' ? 'bg-success-strong' : 'bg-accent',
+                  )}
+                  style={{ width: `${Math.min(100, row.consumptionPercent)}%` }}
+                />
+              </div>
+              <p
                 className={cn(
-                  'h-full rounded-full',
-                  row.overBudget ? 'bg-error' : tone === 'income' ? 'bg-success-strong' : 'bg-accent',
+                  'shrink-0 text-[11px] tabular-nums',
+                  row.overBudget ? 'font-medium text-error' : 'text-fg-muted',
                 )}
-                style={{ width: `${Math.min(100, row.consumptionPercent)}%` }}
-              />
+              >
+                {row.consumptionPercent}% · {remainingLabel}
+                {row.lineCount > 1 ? ` · ${row.lineCount} échéances` : ''}
+              </p>
             </div>
-            <p
-              className={cn(
-                'shrink-0 text-[11px] tabular-nums',
-                row.overBudget ? 'font-medium text-error' : 'text-fg-muted',
-              )}
-            >
-              {row.consumptionPercent}% · {remainingLabel}
-            </p>
           </div>
+          <Icon name="chevron_right" className="shrink-0 text-fg-muted" aria-hidden />
         </div>
-      </div>
+      </button>
     </li>
   );
 }

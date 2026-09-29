@@ -494,17 +494,6 @@ export function AccountLedgerPage() {
                   <>
                     <Button
                       type="button"
-                      variant={BUTTON_VARIANT.warning}
-                      fullWidth={false}
-                      className="h-9 w-auto shrink-0 px-2.5 text-control"
-                      disabled={budgetActions.busy}
-                      onClick={budgetActions.onEdit}
-                    >
-                      <span className="hidden sm:inline">Modifier</span>
-                      <Icon name="edit" className="text-icon-sm sm:hidden" />
-                    </Button>
-                    <Button
-                      type="button"
                       variant={BUTTON_VARIANT.danger}
                       fullWidth={false}
                       className="h-9 w-auto shrink-0 px-2.5 text-control"
