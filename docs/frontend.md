@@ -23,7 +23,7 @@ Les utilities de marque (`bg-accent`, `text-brand`, …) sont les mêmes partout
 
 ## Comptes, catégories & enseignes
 
-- **`/comptes`** : dashboard (solde + flux en 1/4, cartes comptes en 3/4 ; dessous grille 2+1+1 : graphique solde, **Échéances**, **Répartition** cliquable vers le ledger ; alertes « À surveiller » via cloche à côté des paramètres). Stats via `fetchForecastStatsDashboard` ; le graphique peut masquer/afficher M−1 sans recharger.
+- **`/comptes`** : dashboard en grille 4 colonnes alignées (solde 1 + comptes comptes 1 chacun ; dessous 2+1+1 : graphique, **Échéances**, **Répartition**). Stats via `fetchForecastStatsDashboard` ; le graphique peut masquer/afficher M−1 sans recharger.
 - **`/comptes/:subAccountId`** : chrome détail épinglé ; toggle compact Opérations / Budget ; budget synchronisé sur `?vue=budget&mois=YYYY-MM` ; actions budget (Modifier / Supprimer) et création opération en haut à droite ; switcher.
 - **Budget** : vue stats toujours visible ; **+** sur Revenus/Dépenses ouvre un dialog (catégorie, montant TPE, jour) ; clic sur une carte → échéances ; duplication M−1 en en-tête ; vue tableur (dialog) pour édition groupée ; suppression du budget dans le chrome du ledger.
 - **Paramètres** : `/parametres` → profil / comptes / catégories / **enseignes** ; rail sections (desktop) + pills (mobile) ; contenu en `SectionCard` ; archivage via `ConfirmDialog`.

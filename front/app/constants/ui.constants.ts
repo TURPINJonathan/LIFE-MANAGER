@@ -56,15 +56,17 @@ export const DIALOG_SIZE = {
   default: 'default',
   large: 'large',
   wide: 'wide',
+  full: 'full',
 } as const;
 
 const DIALOG_PANEL_BASE_CLASSES =
-  'relative flex max-h-[92dvh] w-full animate-art-in flex-col rounded-t-panel bg-card p-6 shadow-lg md:max-h-[85dvh] md:rounded-panel';
+  'relative flex max-h-[92dvh] w-full animate-art-in flex-col overflow-hidden rounded-t-panel bg-card p-6 md:max-h-[85dvh] md:rounded-panel';
 
 export const DIALOG_SIZE_CLASSES: Record<(typeof DIALOG_SIZE)[keyof typeof DIALOG_SIZE], string> = {
   default: `${DIALOG_PANEL_BASE_CLASSES} md:max-w-md`,
   large: `${DIALOG_PANEL_BASE_CLASSES} md:max-w-3xl`,
   wide: `${DIALOG_PANEL_BASE_CLASSES} md:max-w-5xl`,
+  full: `${DIALOG_PANEL_BASE_CLASSES} h-[92dvh] md:h-[90dvh] md:max-w-7xl`,
 };
 
 export const SPINNER_VARIANT = {
@@ -211,7 +213,7 @@ export const APP_PINNED_DETAIL_CHROME_CLASSES =
 export const APP_PINNED_DETAIL_BODY_CLASSES = 'min-h-0 min-w-0 flex-1 overflow-y-auto px-3 pb-4 md:px-6 md:pb-6';
 
 export const LIST_CARD_SURFACE_CLASSES =
-  'flex items-stretch gap-2 overflow-hidden rounded-panel border-y border-r border-l-[3px] border-border-subtle bg-elevated shadow-sm transition-[border-color,background-color] duration-(--duration-fast) hover:border-border-strong md:gap-3';
+  'flex items-stretch gap-2 overflow-hidden rounded-panel border-y border-r border-l-[3px] border-border-subtle bg-elevated transition-[border-color,background-color] duration-(--duration-fast) hover:border-border-strong md:gap-3';
 
 export const LIST_CARD_IDENTITY_CLASSES =
   'relative z-0 flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5 md:gap-3 md:px-4 md:py-3';
@@ -232,7 +234,7 @@ export const CHOICE_CARD_SHELL_CLASSES =
   'flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-control border px-2 py-3.5 text-center transition-colors duration-(--duration-fast) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 export const CHOICE_CARD_STATE_CLASSES = {
-  active: 'border-accent bg-accent-tint text-accent-press shadow-sm',
+  active: 'border-accent bg-accent-tint text-accent-press',
   inactive: 'border-border bg-page text-fg-secondary hover:border-border-strong hover:text-fg-primary dark:bg-elevated',
   disabled: 'cursor-not-allowed border-border-subtle bg-subtle text-fg-muted opacity-60',
 } as const;
@@ -253,7 +255,7 @@ export const SELECT_OPTION_STATE_CLASSES = {
 export const SELECT_PANEL_FALLBACK_LABEL = 'Sélection';
 
 export const APP_MAIN_SURFACE_CLASSES =
-  'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-page pb-[var(--app-tab-nav-block-size)] md:m-2 md:mt-0 md:mr-3 md:mb-3 md:ml-0 md:rounded-panel md:bg-card md:pb-0 md:shadow-lg';
+  'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-page pb-[var(--app-tab-nav-block-size)] md:m-2 md:mt-0 md:mr-3 md:mb-3 md:ml-0 md:rounded-panel md:bg-card md:pb-0';
 
 export const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';

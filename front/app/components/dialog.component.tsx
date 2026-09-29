@@ -32,7 +32,7 @@ export function Dialog({ isOpen, onClose, title, icon, children, size = DIALOG_S
     >
       <Button variant={BUTTON_VARIANT.backdrop} tabIndex={-1} aria-label="Fermer" onClick={onClose} />
       <div className={DIALOG_SIZE_CLASSES[size]}>
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex shrink-0 items-center justify-between gap-2">
           {icon !== undefined && <Icon name={icon} className="text-icon-sm! shrink-0 text-fg-muted" />}
           <Typography variant="title" as="h2" className="min-w-0 flex-1">
             {title}
@@ -41,8 +41,10 @@ export function Dialog({ isOpen, onClose, title, icon, children, size = DIALOG_S
         </div>
         <div
           className={cn(
-            'min-h-0 flex-1 overflow-y-auto',
-            (size === DIALOG_SIZE.large || size === DIALOG_SIZE.wide) && 'flex flex-col',
+            'min-h-0 flex-1',
+            size === DIALOG_SIZE.large || size === DIALOG_SIZE.wide || size === DIALOG_SIZE.full
+              ? 'flex flex-col overflow-hidden'
+              : 'overflow-y-auto',
           )}
         >
           {children}

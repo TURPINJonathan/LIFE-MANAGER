@@ -30,34 +30,64 @@ export function SubAccountSwitcher({ accounts, activeId, className }: SubAccount
   }
 
   return (
-    <div className={cn('-mx-1 overflow-x-auto', className)}>
-      <ul className="flex min-w-min gap-2 px-1 pb-1">
+    <div className={cn('w-full', className)}>
+      <ul className="m-0 flex w-full list-none flex-nowrap gap-2 p-0">
         {items.map((sub) => {
           const active = sub.id === activeId;
           return (
-            <li key={sub.id} className="shrink-0">
+            <li key={sub.id} className="min-w-0 flex-1 basis-0">
               <Link
                 to={accountLedgerPath(sub.id)}
                 className={cn(
-                  'flex min-w-[9.5rem] max-w-[12rem] cursor-pointer items-center gap-2.5 rounded-control border px-3 py-2.5 transition-colors',
-                  active
-                    ? 'border-accent bg-accent-tint text-accent-press'
-                    : 'border-border-subtle bg-elevated text-fg-secondary hover:border-border hover:text-fg-primary',
+                  'relative flex h-full min-h-[4.75rem] w-full cursor-pointer flex-col overflow-hidden rounded-panel p-2.5 transition-[border-color,filter,background-color] duration-(--duration-fast) sm:min-h-[5.25rem] sm:p-3',
+                  !active && 'hover:brightness-[0.98] dark:hover:brightness-110',
                 )}
+                style={{
+                  backgroundColor: active
+                    ? sub.color
+                    : `color-mix(in srgb, ${sub.color} 14%, var(--color-elevated, #fff))`,
+                  borderColor: active ? sub.color : `color-mix(in srgb, ${sub.color} 32%, transparent)`,
+                }}
               >
-                <span
-                  className="flex size-9 shrink-0 items-center justify-center rounded-control-sm text-white"
-                  style={{ backgroundColor: sub.color }}
-                >
-                  <Icon name={sub.icon} className="text-icon-sm" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-control font-medium text-fg-primary">{sub.name}</span>
-                  <span className="block truncate text-[11px] text-fg-muted">{sub.accountName}</span>
-                  <span className={cn('mt-0.5 block text-control font-semibold', signedAmountClass(sub.balanceCents))}>
+                <Icon
+                  name={sub.icon}
+                  aria-hidden="true"
+                  className={cn(
+                    'pointer-events-none absolute top-1/2 -right-5 -translate-y-1/2 text-[4.5rem]! leading-none sm:-right-6 sm:text-[5.5rem]!',
+                    active ? 'opacity-25' : 'opacity-[0.14]',
+                  )}
+                  style={{ color: active ? '#fff' : sub.color }}
+                />
+
+                <div className="relative z-10 min-w-0">
+                  <p
+                    className={cn(
+                      'truncate text-control font-semibold',
+                      active ? 'text-white' : 'text-fg-primary',
+                    )}
+                  >
+                    {sub.name}
+                  </p>
+                  <p
+                    className={cn(
+                      'truncate text-[11px] leading-snug',
+                      active ? 'text-white/75' : 'text-fg-muted',
+                    )}
+                  >
+                    {sub.accountName}
+                  </p>
+                </div>
+
+                <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-0.5 pt-1">
+                  <p
+                    className={cn(
+                      'text-center text-[1.05rem] font-bold leading-none tracking-tight tabular-nums sm:text-[1.15rem]',
+                      active ? 'text-white' : signedAmountClass(sub.balanceCents),
+                    )}
+                  >
                     {formatCents(sub.balanceCents)}
-                  </span>
-                </span>
+                  </p>
+                </div>
               </Link>
             </li>
           );

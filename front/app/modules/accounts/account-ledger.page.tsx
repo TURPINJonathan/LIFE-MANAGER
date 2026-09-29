@@ -418,45 +418,74 @@ export function AccountLedgerPage() {
   return (
     <div className={APP_PAGE_FILL_CLASSES}>
       <div className={APP_PINNED_DETAIL_CHROME_CLASSES}>
-        <div className="flex min-w-0 items-center gap-2">
-          <Link
-            to={APP_ROUTE.accounts}
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-control text-fg-secondary hover:bg-subtle hover:text-fg-primary"
-            aria-label="Retour aux comptes"
-          >
-            <Icon name="arrow_back" className="text-icon-sm" />
-          </Link>
-          {loading || !ledger ? (
-            <p className="text-body text-fg-muted">Chargement…</p>
-          ) : (
-            <>
-              <span
-                className="flex size-10 shrink-0 items-center justify-center rounded-control text-white"
-                style={{ backgroundColor: ledger.subAccount.color }}
-              >
-                <Icon name={ledger.subAccount.icon} className="text-icon-sm" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <Typography variant="title" as="h1" className="truncate text-fg-primary">
-                  {ledger.subAccount.name}
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <Link
+              to={APP_ROUTE.accounts}
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-control text-fg-secondary hover:bg-subtle hover:text-fg-primary"
+              aria-label="Retour aux comptes"
+            >
+              <Icon name="arrow_back" className="text-icon-sm" />
+            </Link>
+            {loading || !ledger ? (
+              <p className="text-body text-fg-muted">Chargement…</p>
+            ) : (
+              <>
+                <span
+                  className="flex size-10 shrink-0 items-center justify-center rounded-control text-white"
+                  style={{ backgroundColor: ledger.subAccount.color }}
+                >
+                  <Icon name={ledger.subAccount.icon} className="text-icon-sm" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <Typography variant="title" as="h1" className="truncate text-fg-primary">
+                    {ledger.subAccount.name}
+                  </Typography>
+                  <p className="truncate text-control text-fg-secondary">
+                    Solde{' '}
+                    <strong className={signedAmountClass(ledger.subAccount.balanceCents)}>
+                      {formatCents(ledger.subAccount.balanceCents)}
+                    </strong>
+                    {ledger.subAccount.provisionalBalanceCents !== ledger.subAccount.balanceCents ? (
+                      <>
+                        {' · '}
+                        <span className="text-fg-muted">Provisoire </span>
+                        <strong className={signedAmountClass(ledger.subAccount.provisionalBalanceCents)}>
+                          {formatCents(ledger.subAccount.provisionalBalanceCents)}
+                        </strong>
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="flex justify-center px-1">
+            {view === 'budget' && budgetActions ? (
+              <div className="flex items-center gap-0.5">
+                <IconButton
+                  variant={ICON_BUTTON_VARIANT.ghost}
+                  icon="chevron_left"
+                  aria-label="Mois précédent"
+                  onClick={budgetActions.onPrevMonth}
+                />
+                <Typography variant="body" weight="semibold" className="min-w-[8.5rem] text-center tabular-nums sm:min-w-[10rem]">
+                  {budgetActions.monthLabel}
                 </Typography>
-                <p className="text-control text-fg-secondary">
-                  Solde{' '}
-                  <strong className={signedAmountClass(ledger.subAccount.balanceCents)}>
-                    {formatCents(ledger.subAccount.balanceCents)}
-                  </strong>
-                  {ledger.subAccount.provisionalBalanceCents !== ledger.subAccount.balanceCents ? (
-                    <>
-                      {' · '}
-                      <span className="text-fg-muted">Provisoire </span>
-                      <strong className={signedAmountClass(ledger.subAccount.provisionalBalanceCents)}>
-                        {formatCents(ledger.subAccount.provisionalBalanceCents)}
-                      </strong>
-                    </>
-                  ) : null}
-                </p>
+                <IconButton
+                  variant={ICON_BUTTON_VARIANT.ghost}
+                  icon="chevron_right"
+                  aria-label="Mois suivant"
+                  onClick={budgetActions.onNextMonth}
+                />
               </div>
-              <div className="flex shrink-0 items-center gap-1.5">
+            ) : null}
+          </div>
+
+          <div className="flex shrink-0 items-center justify-end gap-1.5">
+            {!loading && ledger ? (
+              <>
                 <div
                   className="inline-flex rounded-control border border-border-subtle bg-subtle p-0.5"
                   role="group"
@@ -468,7 +497,7 @@ export function AccountLedgerPage() {
                     className={cn(
                       'inline-flex h-9 cursor-pointer items-center gap-1 rounded-control px-2 text-control font-medium transition-colors',
                       view === 'operations'
-                        ? 'bg-elevated text-fg-primary shadow-sm'
+                        ? 'bg-elevated text-fg-primary'
                         : 'text-fg-muted hover:text-fg-primary',
                     )}
                   >
@@ -481,7 +510,7 @@ export function AccountLedgerPage() {
                     className={cn(
                       'inline-flex h-9 cursor-pointer items-center gap-1 rounded-control px-2 text-control font-medium transition-colors',
                       view === 'budget'
-                        ? 'bg-elevated text-fg-primary shadow-sm'
+                        ? 'bg-elevated text-fg-primary'
                         : 'text-fg-muted hover:text-fg-primary',
                     )}
                   >
@@ -492,17 +521,28 @@ export function AccountLedgerPage() {
 
                 {view === 'budget' && budgetActions ? (
                   <>
-                    <Button
-                      type="button"
-                      variant={BUTTON_VARIANT.danger}
-                      fullWidth={false}
-                      className="h-9 w-auto shrink-0 px-2.5 text-control"
-                      disabled={budgetActions.busy}
-                      onClick={budgetActions.onDelete}
-                    >
-                      <span className="hidden sm:inline">Supprimer</span>
-                      <Icon name="delete" className="text-icon-sm sm:hidden" />
-                    </Button>
+                    <Tooltip content="Vue tableur — édition groupée">
+                      <IconButton
+                        variant={ICON_BUTTON_VARIANT.ghost}
+                        icon="table_rows"
+                        aria-label="Vue tableur"
+                        disabled={budgetActions.busy}
+                        onClick={budgetActions.onOpenSpreadsheet}
+                      />
+                    </Tooltip>
+                    {budgetActions.canDelete ? (
+                      <Button
+                        type="button"
+                        variant={BUTTON_VARIANT.danger}
+                        fullWidth={false}
+                        className="h-9 w-auto shrink-0 px-2.5 text-control"
+                        disabled={budgetActions.busy}
+                        onClick={budgetActions.onDelete}
+                      >
+                        <span className="hidden sm:inline">Supprimer</span>
+                        <Icon name="delete" className="text-icon-sm sm:hidden" />
+                      </Button>
+                    ) : null}
                   </>
                 ) : null}
 
@@ -517,9 +557,9 @@ export function AccountLedgerPage() {
                     <span className="hidden sm:inline">Opération</span>
                   </Button>
                 ) : null}
-              </div>
-            </>
-          )}
+              </>
+            ) : null}
+          </div>
         </div>
 
         {accounts.length > 0 && <SubAccountSwitcher accounts={accounts} activeId={subAccountId} />}

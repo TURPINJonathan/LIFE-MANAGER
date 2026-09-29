@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { Button, ConfirmDialog, Dialog, Icon, IconButton, Tooltip, Typography } from '@components';
+import { Button, ConfirmDialog, Dialog, Icon, IconButton, Tooltip } from '@components';
 import { BUTTON_VARIANT, DIALOG_SIZE, ICON_BUTTON_VARIANT, currentYearMonth, shiftYearMonth } from '@constants';
 import { CategoryQuickCreate } from '@categories';
 import {
@@ -68,8 +68,16 @@ type ForecastPanelProps = {
 };
 
 export type ForecastChromeActions = {
-  onDelete: () => void;
   busy: boolean;
+  monthLabel: string;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onOpenSpreadsheet: () => void;
+  canDelete: boolean;
+  onDelete: () => void;
+  canDuplicate: boolean;
+  onDuplicate: () => void;
+  previousMonthLabel: string;
 };
 
 type AggregatedStatsCategory = {
@@ -333,20 +341,24 @@ export function ForecastPanel({
     }
   };
 
+  const prevMonthLabel = useMemo(() => formatMonthLabel(shiftYearMonth(yearMonth, -1)), [yearMonth]);
+
   useEffect(() => {
     if (!onChromeActionsChange) return;
-    if (!forecast) {
-      onChromeActionsChange(null);
-      return;
-    }
     onChromeActionsChange({
-      onDelete: () => setDeleteOpen(true),
       busy,
+      monthLabel: formatMonthLabel(yearMonth),
+      onPrevMonth: () => setYearMonth((value) => shiftYearMonth(value, -1)),
+      onNextMonth: () => setYearMonth((value) => shiftYearMonth(value, 1)),
+      onOpenSpreadsheet: () => openSpreadsheet(),
+      canDelete: Boolean(forecast),
+      onDelete: () => setDeleteOpen(true),
+      canDuplicate: !forecast,
+      onDuplicate: () => void onDuplicate(),
+      previousMonthLabel: prevMonthLabel,
     });
     return () => onChromeActionsChange(null);
-  }, [onChromeActionsChange, forecast, busy]);
-
-  const prevMonthLabel = useMemo(() => formatMonthLabel(shiftYearMonth(yearMonth, -1)), [yearMonth]);
+  }, [onChromeActionsChange, forecast, busy, yearMonth, prevMonthLabel]);
   const aggregatedCategories = useMemo(() => aggregateStatsCategories(stats?.categories ?? []), [stats?.categories]);
   const previousByKey = useMemo(() => {
     const map = new Map<string, ForecastStatsPreviousCategory>();
@@ -548,49 +560,6 @@ export function ForecastPanel({
 
   return (
     <div className="mt-4 flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <IconButton
-            variant={ICON_BUTTON_VARIANT.ghost}
-            icon="chevron_left"
-            aria-label="Mois précédent"
-            onClick={() => setYearMonth((value) => shiftYearMonth(value, -1))}
-          />
-          <Typography variant="title" className="min-w-[10rem] text-center">
-            {formatMonthLabel(yearMonth)}
-          </Typography>
-          <IconButton
-            variant={ICON_BUTTON_VARIANT.ghost}
-            icon="chevron_right"
-            aria-label="Mois suivant"
-            onClick={() => setYearMonth((value) => shiftYearMonth(value, 1))}
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {!forecast ? (
-            <Button
-              type="button"
-              variant={BUTTON_VARIANT.success}
-              fullWidth={false}
-              className="h-9 w-auto px-3 text-control"
-              loading={busy}
-              onClick={() => void onDuplicate()}
-            >
-              Dupliquer {prevMonthLabel}
-            </Button>
-          ) : null}
-          <Tooltip content="Vue tableur — édition groupée">
-            <IconButton
-              variant={ICON_BUTTON_VARIANT.ghost}
-              icon="table_rows"
-              aria-label="Vue tableur"
-              disabled={busy}
-              onClick={openSpreadsheet}
-            />
-          </Tooltip>
-        </div>
-      </div>
-
       <ConfirmDialog
         isOpen={deleteOpen}
         onClose={() => setDeleteOpen(false)}
@@ -618,6 +587,16 @@ export function ForecastPanel({
                 Pas encore de budget pour ce mois — ajoute une ligne avec <strong>+</strong> ou duplique{' '}
                 {prevMonthLabel}.
               </p>
+              <Button
+                type="button"
+                variant={BUTTON_VARIANT.success}
+                fullWidth={false}
+                className="h-9 w-auto shrink-0 px-3 text-control"
+                loading={busy}
+                onClick={() => void onDuplicate()}
+              >
+                Dupliquer {prevMonthLabel}
+              </Button>
             </div>
           ) : null}
 
@@ -806,7 +785,7 @@ export function ForecastPanel({
         onClose={() => setSpreadsheetOpen(false)}
         title={`Vue tableur — ${formatMonthLabel(yearMonth)}`}
         icon="table_rows"
-        size={DIALOG_SIZE.wide}
+        size={DIALOG_SIZE.full}
       >
         <ForecastEditor
           isNew={!forecast}
@@ -898,7 +877,7 @@ function StatCard({
   return (
     <article
       className={cn(
-        'relative flex h-full min-h-[6.5rem] flex-col overflow-hidden rounded-panel border p-3 shadow-sm sm:min-h-0 sm:p-4',
+        'relative flex h-full min-h-[6.5rem] flex-col overflow-hidden rounded-panel p-3 sm:min-h-0 sm:p-4',
         surface,
       )}
     >
@@ -964,7 +943,7 @@ function ForecastCategoryColumn({
   onAddOrphan: (orphan: ForecastStatsPreviousCategory) => void;
 }) {
   return (
-    <section className="flex min-w-0 flex-col gap-3 rounded-panel border border-border-subtle bg-elevated p-3 shadow-sm sm:p-4">
+    <section className="flex min-w-0 flex-col gap-3 rounded-panel border border-border-subtle bg-elevated p-3  sm:p-4">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
@@ -991,13 +970,14 @@ function ForecastCategoryColumn({
             </span>
           </Tooltip>
           <span className="rounded-full bg-subtle px-2 py-0.5 text-control text-fg-muted">{rows.length}</span>
-          <IconButton
-            variant={ICON_BUTTON_VARIANT.ghost}
-            icon="add"
+          <button
+            type="button"
             aria-label={`Ajouter ${tone === 'income' ? 'un revenu' : 'une dépense'}`}
-            className={cn(tone === 'income' ? 'text-success-strong' : 'text-error')}
             onClick={onAdd}
-          />
+            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-success text-success-strong transition-colors duration-(--duration-fast) hover:bg-success/10 active:bg-success/15"
+          >
+            <Icon name="add" className="text-icon-sm" />
+          </button>
         </div>
       </header>
 
