@@ -19,10 +19,21 @@ Les utilities de marque (`bg-accent`, `text-brand`, …) sont les mêmes partout
 | `neutral` | Accueil, login, fallback | Slate |
 | `accounts` | `/comptes` (+ sous-routes) | Orangé |
 | `events` | `/evenements` | Cyan / pétrole clair |
-| `categories` | `/categories` | Prune |
 | `settings` | `/parametres` | Bleu |
 
-### Fichiers
+## Comptes, catégories & enseignes
+
+- **`/comptes`** : dashboard (solde + flux en 1/4, cartes comptes en 3/4 ; dessous grille 2+1+1 : graphique solde, **Échéances**, **Répartition** cliquable vers le ledger ; alertes « À surveiller » via cloche à côté des paramètres). Stats via `fetchForecastStatsDashboard` ; le graphique peut masquer/afficher M−1 sans recharger.
+- **`/comptes/:subAccountId`** : chrome détail épinglé ; toggle compact Opérations / Budget ; budget synchronisé sur `?vue=budget&mois=YYYY-MM` ; actions budget (Modifier / Supprimer) et création opération en haut à droite ; switcher.
+- **Budget vide** : CTA prioritaire « Dupliquer M−1 », puis création manuelle.
+- **Paramètres** : `/parametres` → profil / comptes / catégories / **enseignes** ; rail sections (desktop) + pills (mobile) ; contenu en `SectionCard` ; archivage via `ConfirmDialog`.
+- **Opération** : catégorie (création à la volée) ; **enseigne optionnelle** (auto-favori de la catégorie si défini ; select : liées A–Z puis autres A–Z) ; **pièce jointe optionnelle** (caméra ou fichier PDF/image) ; si la catégorie n’est pas dans le budget du mois (date d’opération), une ligne forecast est ajoutée automatiquement.
+- **Catégories / enseignes** : liaison N–N ; une enseigne favorite par catégorie (auto si une seule).
+- **Toasts** : `ToastHost` dans `AppShell` ; helpers `toastSuccess` / `toastError` / `toastFromError` / `toastInfo` (`@utils`) pour le feedback. Confirmations destructives via `ConfirmDialog` (pas `window.confirm`).
+- **Boutons** : `success` (enregistrer), `successOutline` (enregistrer et continuer), `warning` (modifier), `danger` (supprimer / archiver), `dangerOutline` (annuler), `neutral` (réinitialiser).
+- Composants partagés : `ListCard`, `SectionCard`, `EmptyState`, `ConfirmDialog` (tokens `accent`, pas copper FYNX).
+
+## Dominance — fichiers
 
 | Fichier | Rôle |
 | --- | --- |
@@ -66,3 +77,4 @@ Les entrées de navigation sont dans `NAV_ITEMS` / `MENU_ITEMS` / `CREATE_ENTRIE
 | `npm run check` | `format:check` + `lint` |
 | `npm test` | Vitest |
 | `npm run ci` | check + typecheck + tests |
+| `npm run generate:icons` | Régénère le catalogue d’icônes Material Symbols |

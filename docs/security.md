@@ -10,6 +10,7 @@ Authentification stateless par JWT (LexikJWTAuthenticationBundle).
 - Le login est limité à 5 tentatives par 15 minutes.
 - Rôles : `ROLE_USER` (toujours présent) et `ROLE_ADMIN`.
 - Tout chemin `/api` autre que le login et la documentation exige un JWT valide.
+- Durée de vie du JWT : **14 jours** (`token_ttl: 1209600`). Pas de refresh token ni de liste de révocation pour l’instant.
 
 Création d'un compte en développement :
 
@@ -27,10 +28,10 @@ Chaque nouvelle opération API Platform doit déclarer `security`. Une ressource
 
 ## Front
 
-Au chargement, le shell lit le JWT dans `sessionStorage`, appelle `/api/me`, puis fixe le statut de session.
+Au chargement, le shell lit le JWT dans `localStorage` (`lm.accessToken`), appelle `/api/me`, puis fixe le statut de session.
 
 - Les routes sous `_protected` exigent une session. Sinon, redirection vers `/login`.
 - `/login` est une route invitée. Une session déjà ouverte retourne à l'accueil.
-- La déconnexion efface le token local. Le JWT reste valable jusqu'à son expiration (1 heure) : il n'y a pas encore de liste de révocation.
+- La déconnexion efface le token local. Le JWT reste valable jusqu'à son expiration (14 jours) : il n'y a pas encore de liste de révocation.
 
-Le token dans `sessionStorage` est lisible par le JavaScript de la page. C'est le fonctionnement retenu pour ce JWT. Un cookie HttpOnly pourra le remplacer plus tard si on ajoute un canal serveur.
+Le token dans `localStorage` est lisible par le JavaScript de la page. C'est le fonctionnement retenu pour ce JWT. Un cookie HttpOnly pourra le remplacer plus tard si on ajoute un canal serveur.

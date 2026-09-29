@@ -24,7 +24,43 @@ Un nouveau sujet (comptes, événements) devient un nouveau dossier `Module/`, a
 
 Doctrine mappe explicitement `Domain/Entity`. Les DTO ne sont pas des entités.
 
-API Platform sert les ressources et la doc OpenAPI. Les points d'entrée techniques (`/api/login`, `/api/me`) restent des contrôleurs Symfony.
+API Platform sert les ressources et la doc OpenAPI. Les points d'entrée techniques (`/api/login`, `/api/me`) et les modules métier v1 (`/api/accounts`, `/api/categories`, …) restent des contrôleurs Symfony JSON.
+
+## Modules métier (v1)
+
+- **`Module/Security`** — utilisateurs, JWT, `/api/login`, `/api/me`
+- **`Module/Category`** — catégories (icône, couleur, kind) scopées à l’utilisateur ; **enseignes liées** (`merchantIds`) et **favori** optionnel (`favoriteMerchantId`, auto si une seule enseigne)
+- **`Module/Merchant`** — enseignes (label, couleur, **icône XOR image**) scopées à l’utilisateur ; **catégories liées** (`categoryIds`) ; image stockée sous `var/uploads` (gzip) et servie décompressée via endpoint JWT
+- **`Module/Account`** — comptes → sous-comptes → transactions (`ledger_transaction`), solde en centimes, **forecasts mensuels** (`monthly_forecast` / `forecast_line`) ; enseigne et pièce jointe **optionnelles** sur une opération (photo/PDF sous `var/uploads` en gzip, download JWT décompressé). À la saisie, le choix d’une catégorie préremplit l’enseigne favorite ; le select enseigne liste d’abord les liées.
+
+Montants absolus à la saisie ; le signe (+ crédit / − débit) est dérivé du type de catégorie (`expense` / `income`). Pour une catégorie `both`, le client envoie aussi `flow`.
+
+### Forecasts
+
+Un budget est **optionnel**, scensé à un sous-compte et à un mois (`YYYY-MM`). Endpoints :
+
+| Méthode | Path |
+| --- | --- |
+| GET | `/api/sub-accounts/{id}/forecasts?yearMonth=` |
+| POST | `/api/sub-accounts/{id}/forecasts` |
+| POST | `/api/sub-accounts/{id}/forecasts/duplicate` |
+| PATCH/DELETE | `/api/forecasts/{id}` |
+| GET | `/api/sub-accounts/{id}/forecast-stats?yearMonth=` |
+| GET | `/api/forecast-stats/dashboard?yearMonth=&includePrevious=` |
+
+La duplication copie les lignes d’un mois source vers un mois cible (défaut : mois précédent → mois courant). Les stats exposent soldes (début, actuel, fin réalisée, projetés budget/réaliste), totaux planifiés/réalisés, détail par catégorie et flux hors budget.
+
+Chaque ligne de budget peut porter un **jour du mois optionnel** (`scheduledDay`, 1–31) et un montant : une échéance = une ligne. La même catégorie peut apparaître plusieurs fois (ex. le 3 et le 15 avec des montants différents). Les jours sans échéance sont appliqués en fin de mois dans la timeline. La duplication conserve le jour.
+
+Les **stats** exposent aussi une `timeline` jour par jour (`budgetBalanceCents`, `realisticBalanceCents`, `actualBalanceCents`, événements planifiés/réalisés) pour projeter le solde du sous-compte sur le mois. `GET /api/forecast-stats/dashboard` agrège en une seule réponse les stats de tous les sous-comptes actifs (timelines, totaux, catégories) pour le dashboard `/comptes` — graphique combiné réalisé / réaliste / budget, overlay M−1, et carte **Échéances** (prochaines lignes planifiées).
+
+Les montants **réalisés** du forecast (stats, timeline, hors budget) se basent sur la **date d’opération** (`operationDate`), pas sur la date effective. Le **solde confirmé** du compte (`balanceCents`) n’utilise que les opérations pointées (`effectiveDate`) ; le **solde provisoire** (`provisionalBalanceCents`) et les `balanceAfterCents` du ledger incluent aussi les opérations en attente.
+
+À la **création ou modification** d’une opération, si la catégorie (et le sens, si `both`) n’est pas dans le budget du mois de la date d’opération, le budget est **créé si besoin** et une ligne est ajoutée avec un montant planifié de **0 €** et le jour d’opération. La réponse inclut `forecastCategoryAdded` (toast côté front).
+
+L’ouverture des **stats forecast** synchronise aussi les catégories présentes dans les opérations du mois mais absentes du budget (même règle : forecast créé si besoin, ligne à 0 €) — le bloc « hors budget » ne doit plus lister ces catégories.
+
+Les stats exposent aussi un bloc **`previousMonth`** (indicatif) : totaux + catégories présentes en M avec leurs montants M−1, et **`orphans`** (catégories M−1 absentes du budget courant). Ces données n’entrent pas dans les totaux, la timeline ni le solde projeté.
 
 ## Front
 
@@ -47,4 +83,6 @@ Les routes déclarées dans `app/routes.ts` rendent une page ou un layout. La lo
 
 ## Données
 
-Chaque personne a son compte. Les données d'un module futur appartiennent à l'utilisateur connecté. Un foyer ou un espace partagé n'est pas dans ce socle.
+Chaque personne a son compte. Les données d'un module futur appartiennent à l’utilisateur connecté. Un foyer ou un espace partagé n'est pas dans ce socle.
+
+Les fichiers uploadés (logos, pièces jointes) passent par `LocalUploadStorage` : compression **gzip** à l’écriture sous `var/uploads` (`*.{ext}.gz`), décompression transparente à la lecture HTTP. Les anciens fichiers non compressés restent servis tels quels.
