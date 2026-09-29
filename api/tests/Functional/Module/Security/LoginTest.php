@@ -6,23 +6,22 @@ namespace App\Tests\Functional\Module\Security;
 
 use App\Module\Security\Contract\Service\IUserProvisioner;
 use App\Module\Security\Domain\Enum\UserRole;
+use App\Tests\ResetsSchemaTrait;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class LoginTest extends WebTestCase
 {
+    use ResetsSchemaTrait;
+
     private KernelBrowser $client;
 
     protected function setUp(): void
     {
         $this->client = static::createClient();
         $manager = static::getContainer()->get(EntityManagerInterface::class);
-        $schema = new SchemaTool($manager);
-        $metadata = $manager->getMetadataFactory()->getAllMetadata();
-        $schema->dropSchema($metadata);
-        $schema->createSchema($metadata);
+        $this->resetDatabaseSchema($manager);
     }
 
     public function testLoginReturnsJwtAndMeRequiresIt(): void

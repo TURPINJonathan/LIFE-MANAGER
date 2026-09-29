@@ -21,5 +21,5 @@ export APP_ENV=test
 export DATABASE_URL="$DATABASE_TEST_URL"
 
 php bin/console doctrine:database:create --if-not-exists --no-interaction
-php bin/console doctrine:migrations:migrate --no-interaction
+# Le schéma est reconstruit par ResetsSchemaTrait (SchemaTool) dans les tests fonctionnels.
 php -d memory_limit=512M bin/phpunit
