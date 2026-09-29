@@ -18,7 +18,7 @@ export function SectionCard({ title, icon, iconTint, headerAction, children, cla
   return (
     <section
       className={cn(
-        'flex flex-col gap-3 rounded-panel border border-border-subtle bg-elevated p-4 shadow-sm',
+        'flex flex-col gap-3 rounded-panel border border-border-subtle bg-elevated p-4',
         className,
       )}
     >

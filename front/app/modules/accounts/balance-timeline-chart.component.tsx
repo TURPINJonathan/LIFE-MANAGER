@@ -243,23 +243,10 @@ export function BalanceTimelineChart({
         'relative flex h-full flex-col overflow-hidden text-fg-primary',
         compact
           ? 'min-h-52 rounded-control'
-          : 'min-h-64 rounded-[1.5rem] border border-border-subtle bg-card shadow-md dark:border-border dark:bg-elevated dark:shadow-lg',
+          : 'min-h-64 rounded-panel bg-elevated',
         className,
       )}
     >
-      {!compact ? (
-        <>
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,color-mix(in_oklab,var(--accent)_18%,transparent),transparent_55%),radial-gradient(ellipse_at_95%_85%,color-mix(in_oklab,var(--accent-hover)_12%,transparent),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_15%_0%,color-mix(in_oklab,var(--accent)_32%,transparent),transparent_55%),radial-gradient(ellipse_at_95%_85%,color-mix(in_oklab,var(--accent-hover)_20%,transparent),transparent_50%)]"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-24 -right-16 size-64 rounded-full bg-accent/10 blur-3xl dark:bg-accent/25"
-          />
-        </>
-      ) : null}
-
       <div
         className={cn(
           'relative z-10 flex flex-wrap items-start justify-between gap-3',

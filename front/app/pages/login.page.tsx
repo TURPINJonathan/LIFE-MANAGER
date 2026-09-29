@@ -41,7 +41,7 @@ export function LoginPage() {
     <main className="grid min-h-dvh place-items-center bg-page px-4">
       <form
         onSubmit={onSubmit}
-        className="flex w-full max-w-form flex-col gap-stack-md rounded-panel border border-border-subtle bg-card p-8 shadow-lg"
+        className="flex w-full max-w-form flex-col gap-stack-md rounded-panel border border-border-subtle bg-card p-8"
       >
         <Logo variant="wordmark" className="text-title" />
 

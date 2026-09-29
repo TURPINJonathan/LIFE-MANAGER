@@ -100,15 +100,15 @@ function DashboardSkeleton() {
   return (
     <div className="flex flex-col gap-4" aria-hidden="true">
       <div className="grid gap-4 lg:grid-cols-4">
-        <div className="flex flex-col gap-4 lg:col-span-1">
-          <div className="h-40 animate-pulse rounded-panel bg-subtle" />
-          <div className="h-32 animate-pulse rounded-panel bg-subtle" />
-        </div>
-        <div className="h-72 animate-pulse rounded-panel bg-subtle lg:col-span-3" />
+        <div className="h-48 animate-pulse rounded-panel bg-subtle" />
+        <div className="h-48 animate-pulse rounded-panel bg-subtle" />
+        <div className="h-48 animate-pulse rounded-panel bg-subtle" />
+        <div className="h-48 animate-pulse rounded-panel bg-subtle" />
       </div>
       <div className="grid gap-4 lg:grid-cols-4">
-        <div className="h-56 animate-pulse rounded-panel bg-subtle lg:col-span-3" />
-        <div className="h-56 animate-pulse rounded-panel bg-subtle lg:col-span-1" />
+        <div className="h-56 animate-pulse rounded-panel bg-subtle lg:col-span-2" />
+        <div className="h-56 animate-pulse rounded-panel bg-subtle" />
+        <div className="h-56 animate-pulse rounded-panel bg-subtle" />
       </div>
     </div>
   );
@@ -379,9 +379,9 @@ export function AccountsPage() {
           />
         ) : (
           <>
-            <div className="grid gap-4 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)] lg:items-stretch">
-              <section className="flex min-w-0 flex-col gap-3 rounded-panel border border-border-subtle bg-elevated p-3 shadow-sm">
-                <div>
+            <div className="grid gap-4 lg:grid-cols-4 lg:items-stretch">
+              <section className="flex min-w-0 flex-col gap-3 rounded-panel border border-border-subtle bg-elevated p-3">
+                <div className="min-h-[4.25rem]">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="text-control font-medium text-fg-muted">Solde combiné</p>
                     <p className="text-[11px] text-fg-muted">{monthLabel}</p>
@@ -417,7 +417,7 @@ export function AccountsPage() {
                   </p>
                 </div>
 
-                <div className="border-t border-border-subtle pt-3">
+                <div className="mt-auto border-t border-border-subtle pt-3">
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <p className="text-control font-medium text-fg-secondary">Flux du mois</p>
                     {forecast.meta ? (
@@ -457,84 +457,85 @@ export function AccountsPage() {
                 </div>
               </section>
 
-              <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-3">
-                {groups.map(({ account, balanceCents, subs: accountSubs }) => (
-                  <section
-                    key={account.id}
-                    className="flex min-w-0 flex-1 flex-col gap-2 rounded-panel border border-border-subtle bg-elevated p-3 shadow-sm"
-                  >
-                    <div className="flex shrink-0 items-end justify-between gap-2 px-0.5">
-                      <div className="min-w-0">
-                        <h2 className="truncate text-body font-semibold text-fg-primary">{account.name}</h2>
-                        <p className="text-control text-fg-muted">
-                          {accountSubs.length === 0
-                            ? 'Aucun sous-compte'
-                            : `${accountSubs.length} sous-compte${accountSubs.length > 1 ? 's' : ''}`}
-                        </p>
-                      </div>
-                      {accountSubs.length > 0 && (
-                        <p
-                          className={cn(
-                            'shrink-0 text-body font-semibold tabular-nums',
-                            signedAmountClass(balanceCents),
-                          )}
-                        >
-                          {formatCents(balanceCents)}
-                        </p>
-                      )}
+              {groups.map(({ account, balanceCents, subs: accountSubs }) => (
+                <section
+                  key={account.id}
+                  className={cn(
+                    'flex min-w-0 flex-col gap-2 rounded-panel border border-border-subtle bg-elevated p-3',
+                    groups.length === 1 && 'lg:col-span-3',
+                  )}
+                >
+                  <div className="flex min-h-[4.25rem] shrink-0 items-end justify-between gap-2 px-0.5">
+                    <div className="min-w-0">
+                      <h2 className="truncate text-body font-semibold text-fg-primary">{account.name}</h2>
+                      <p className="text-control text-fg-muted">
+                        {accountSubs.length === 0
+                          ? 'Aucun sous-compte'
+                          : `${accountSubs.length} sous-compte${accountSubs.length > 1 ? 's' : ''}`}
+                      </p>
                     </div>
-
-                    {accountSubs.length === 0 ? (
-                      <div className="rounded-control border border-dashed border-border-subtle bg-page/60 px-3 py-3 text-control text-fg-muted dark:bg-page/20">
-                        <p>
-                          Ajoute un sous-compte dans{' '}
-                          <Link to={settingsPath('comptes')} className="text-accent hover:underline">
-                            les paramètres
-                          </Link>
-                          .
-                        </p>
-                      </div>
-                    ) : (
-                      <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                        {accountSubs.map((sub) => {
-                          const status = budgetStatusLabel(forecast.bySubId[sub.id]);
-                          return (
-                            <li key={sub.id}>
-                              <ListCard
-                                to={accountLedgerPath(sub.id)}
-                                title={sub.name}
-                                subtitle={hasForecastData ? budgetSubtitle(status) : undefined}
-                                avatarIcon={sub.icon}
-                                tintColor={sub.color}
-                                meta={
-                                  <span
-                                    className={cn(
-                                      'text-body font-semibold tabular-nums',
-                                      signedAmountClass(sub.balanceCents),
-                                    )}
-                                  >
-                                    {formatCents(sub.balanceCents)}
-                                  </span>
-                                }
-                                actions={
-                                  <Link
-                                    to={accountLedgerPath(sub.id, 'budget')}
-                                    className="inline-flex size-8 items-center justify-center rounded-control text-fg-muted hover:bg-subtle hover:text-accent"
-                                    aria-label={`Budget ${sub.name}`}
-                                    title="Budget"
-                                  >
-                                    <Icon name="calendar_month" className="text-icon-sm" />
-                                  </Link>
-                                }
-                              />
-                            </li>
-                          );
-                        })}
-                      </ul>
+                    {accountSubs.length > 0 && (
+                      <p
+                        className={cn(
+                          'min-w-[6.5rem] shrink-0 text-right text-body font-semibold tabular-nums',
+                          signedAmountClass(balanceCents),
+                        )}
+                      >
+                        {formatCents(balanceCents)}
+                      </p>
                     )}
-                  </section>
-                ))}
-              </div>
+                  </div>
+
+                  {accountSubs.length === 0 ? (
+                    <div className="rounded-control border border-dashed border-border-subtle bg-page/60 px-3 py-3 text-control text-fg-muted dark:bg-page/20">
+                      <p>
+                        Ajoute un sous-compte dans{' '}
+                        <Link to={settingsPath('comptes')} className="text-accent hover:underline">
+                          les paramètres
+                        </Link>
+                        .
+                      </p>
+                    </div>
+                  ) : (
+                    <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                      {accountSubs.map((sub) => {
+                        const status = budgetStatusLabel(forecast.bySubId[sub.id]);
+                        return (
+                          <li key={sub.id}>
+                            <ListCard
+                              to={accountLedgerPath(sub.id)}
+                              title={sub.name}
+                              subtitle={hasForecastData ? budgetSubtitle(status) : undefined}
+                              avatarIcon={sub.icon}
+                              tintColor={sub.color}
+                              meta={
+                                <span
+                                  className={cn(
+                                    'inline-block min-w-[6.5rem] text-right text-body font-semibold tabular-nums',
+                                    signedAmountClass(sub.balanceCents),
+                                  )}
+                                >
+                                  {formatCents(sub.balanceCents)}
+                                </span>
+                              }
+                              actions={
+                                <Link
+                                  to={accountLedgerPath(sub.id, 'budget')}
+                                  className="inline-flex size-8 items-center justify-center rounded-control text-fg-muted hover:bg-subtle hover:text-accent"
+                                  aria-label={`Budget ${sub.name}`}
+                                  title="Budget"
+                                >
+                                  <Icon name="calendar_month" className="text-icon-sm" />
+                                </Link>
+                              }
+                            />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </section>
+              ))}
             </div>
 
             <div className="grid gap-4 lg:grid-cols-4 lg:items-stretch">
@@ -567,7 +568,7 @@ export function AccountsPage() {
                 )}
               </SectionCard>
 
-              <SectionCard title="Échéances" icon="event_upcoming" className="min-w-0 lg:col-span-1">
+              <SectionCard title="Échéances" icon="event_upcoming" className="flex min-w-0 flex-col lg:col-span-1">
                 {upcomingDeadlines.length === 0 ? (
                   <EmptyState
                     compact
@@ -581,19 +582,19 @@ export function AccountsPage() {
                       <li key={item.key}>
                         <Link
                           to={accountLedgerPath(item.subAccountId, 'budget')}
-                          className="flex items-center gap-2 rounded-control px-1 py-1.5 hover:bg-subtle"
+                          className="grid grid-cols-[2rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-control px-1 py-1.5 hover:bg-subtle"
                         >
-                          <span className="w-7 shrink-0 text-center text-[11px] font-semibold tabular-nums text-fg-muted">
+                          <span className="text-center text-[11px] font-semibold tabular-nums text-fg-muted">
                             j.{item.day}
                           </span>
                           <span
-                            className="flex size-7 shrink-0 items-center justify-center rounded-control text-white"
+                            className="flex size-7 items-center justify-center rounded-control text-white"
                             style={{ backgroundColor: item.categoryColor }}
                             aria-hidden="true"
                           >
                             <Icon name={item.categoryIcon} className="text-icon-sm" />
                           </span>
-                          <span className="min-w-0 flex-1">
+                          <span className="min-w-0">
                             <span className="block truncate text-control font-medium text-fg-primary">
                               {item.categoryName}
                             </span>
@@ -603,7 +604,7 @@ export function AccountsPage() {
                           </span>
                           <span
                             className={cn(
-                              'shrink-0 text-control font-semibold tabular-nums',
+                              'min-w-[4.5rem] text-right text-control font-semibold tabular-nums',
                               item.isExpense ? 'text-error' : 'text-success-strong',
                             )}
                           >
@@ -616,7 +617,7 @@ export function AccountsPage() {
                 )}
               </SectionCard>
 
-              <SectionCard title="Répartition" icon="pie_chart" className="min-w-0 lg:col-span-1">
+              <SectionCard title="Répartition" icon="pie_chart" className="flex min-w-0 flex-col lg:col-span-1">
                 {distribution.length === 0 ? (
                   <EmptyState
                     compact
@@ -630,25 +631,21 @@ export function AccountsPage() {
                       <li key={sub.id}>
                         <Link
                           to={accountLedgerPath(sub.id)}
-                          className="flex flex-col gap-1 rounded-control hover:bg-subtle/80"
+                          className="grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 rounded-control hover:bg-subtle/80"
                         >
-                          <div className="flex items-center justify-between gap-2 text-control">
-                            <span className="inline-flex min-w-0 items-center gap-2">
-                              <span
-                                className="flex size-7 shrink-0 items-center justify-center rounded-control text-white"
-                                style={{ backgroundColor: sub.color }}
-                                aria-hidden="true"
-                              >
-                                <Icon name={sub.icon} className="text-icon-sm" />
-                              </span>
-                              <span className="min-w-0 truncate">
-                                <span className="font-medium text-fg-primary">{sub.name}</span>
-                                <span className="text-fg-muted"> · {sub.accountName}</span>
-                              </span>
-                            </span>
-                            <span className="shrink-0 tabular-nums text-fg-muted">{sub.share}%</span>
-                          </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-subtle">
+                          <span
+                            className="row-span-2 flex size-7 items-center justify-center self-center rounded-control text-white"
+                            style={{ backgroundColor: sub.color }}
+                            aria-hidden="true"
+                          >
+                            <Icon name={sub.icon} className="text-icon-sm" />
+                          </span>
+                          <span className="min-w-0 truncate text-control">
+                            <span className="font-medium text-fg-primary">{sub.name}</span>
+                            <span className="text-fg-muted"> · {sub.accountName}</span>
+                          </span>
+                          <span className="shrink-0 text-control tabular-nums text-fg-muted">{sub.share}%</span>
+                          <div className="col-span-2 col-start-2 h-1.5 overflow-hidden rounded-full bg-subtle">
                             <div
                               className="h-full rounded-full"
                               style={{ width: `${sub.share}%`, backgroundColor: sub.color }}
