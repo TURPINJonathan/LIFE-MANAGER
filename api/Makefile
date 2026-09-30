@@ -92,7 +92,7 @@ migration:
 	$(RUN_PHP) php bin/console make:migration --formatted --no-interaction
 
 cache-clear:
-	$(CACHE_PHP) php bin/console cache:clear
+	$(CACHE_PHP) php bin/console cache:clear --no-warmup
 
 cache-warm:
 	$(CACHE_PHP) php bin/console cache:warmup
