@@ -75,6 +75,8 @@ export function DateField({
             mode="single"
             locale={fr}
             weekStartsOn={1}
+            showOutsideDays
+            fixedWeeks
             selected={selected}
             defaultMonth={selected ?? new Date()}
             onSelect={applyDate}
