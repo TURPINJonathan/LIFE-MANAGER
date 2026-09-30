@@ -15,6 +15,7 @@ export type {
   Account,
   Category,
   CategoryKind,
+  CategoryMonthTransactionsPayload,
   ForecastLine,
   ForecastLineInput,
   ForecastStats,

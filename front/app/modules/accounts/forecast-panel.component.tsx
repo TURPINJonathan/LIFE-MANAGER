@@ -42,6 +42,7 @@ import {
   type BudgetTone,
 } from './forecast-budget.utils';
 import { ForecastCategoryDialog } from './forecast-category-dialog.component';
+import { ForecastCategoryOperationsDialog } from './forecast-category-operations-dialog.component';
 import { ForecastEditor, type ForecastDraftLine } from './forecast-editor.component';
 import {
   emptyLineForm,
@@ -192,6 +193,7 @@ export function ForecastPanel({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [lineDialog, setLineDialog] = useState<LineDialogState>(null);
   const [categoryDialogRow, setCategoryDialogRow] = useState<AggregatedStatsCategory | null>(null);
+  const [operationsDialogRow, setOperationsDialogRow] = useState<AggregatedStatsCategory | null>(null);
   const [spreadsheetOpen, setSpreadsheetOpen] = useState(false);
   const [spreadsheetDraft, setSpreadsheetDraft] = useState<DraftLine[]>([]);
   const [spreadsheetBaseline, setSpreadsheetBaseline] = useState<DraftLine[]>([]);
@@ -564,6 +566,11 @@ export function ForecastPanel({
     setCategoryDialogRow(row);
   };
 
+  const operationsPrevious = operationsDialogRow
+    ? (previousByKey.get(previousMonthKey(operationsDialogRow.categoryId, operationsDialogRow.flow)) ??
+      previousByKey.get(previousMonthKey(operationsDialogRow.categoryId, null)))
+    : undefined;
+
   return (
     <div className="mt-4 flex flex-col gap-4">
       <ConfirmDialog
@@ -683,6 +690,7 @@ export function ForecastPanel({
                 emptyLabel="Aucun revenu planifié — appuie sur + pour commencer."
                 onAdd={() => setLineDialog({ mode: 'create', tone: 'income' })}
                 onOpenCategory={openCategoryOrEdit}
+                onOpenOperations={setOperationsDialogRow}
                 onAddOrphan={addOrphanFromPrevious}
               />
               <ForecastCategoryColumn
@@ -700,6 +708,7 @@ export function ForecastPanel({
                 emptyLabel="Aucune dépense planifiée — appuie sur + pour commencer."
                 onAdd={() => setLineDialog({ mode: 'create', tone: 'expense' })}
                 onOpenCategory={openCategoryOrEdit}
+                onOpenOperations={setOperationsDialogRow}
                 onAddOrphan={addOrphanFromPrevious}
               />
             </div>
@@ -783,6 +792,28 @@ export function ForecastPanel({
             setLineDialog({ mode: 'edit', lineId });
           }}
           onDeleteLine={(lineId) => void deleteLineById(lineId)}
+        />
+      ) : null}
+
+      {operationsDialogRow ? (
+        <ForecastCategoryOperationsDialog
+          open={operationsDialogRow !== null}
+          onClose={() => setOperationsDialogRow(null)}
+          subAccountId={subAccountId}
+          yearMonth={yearMonth}
+          tone={isExpenseStatsRow(operationsDialogRow) ? 'expense' : 'income'}
+          categoryId={operationsDialogRow.categoryId}
+          categoryName={operationsDialogRow.categoryName}
+          categoryIcon={operationsDialogRow.categoryIcon}
+          categoryColor={operationsDialogRow.categoryColor}
+          plannedCents={operationsDialogRow.plannedAmountCents}
+          actualCents={operationsDialogRow.actualAmountCents}
+          remainingCents={operationsDialogRow.remainingCents}
+          consumptionPercent={operationsDialogRow.consumptionPercent}
+          overBudget={operationsDialogRow.overBudget}
+          previousMonthLabel={prevMonthLabel}
+          previousPlannedCents={operationsPrevious?.previousPlannedAmountCents ?? 0}
+          previousActualCents={operationsPrevious?.previousActualAmountCents ?? 0}
         />
       ) : null}
 
@@ -930,6 +961,7 @@ function ForecastCategoryColumn({
   emptyLabel,
   onAdd,
   onOpenCategory,
+  onOpenOperations,
   onAddOrphan,
 }: {
   title: string;
@@ -946,6 +978,7 @@ function ForecastCategoryColumn({
   emptyLabel: string;
   onAdd: () => void;
   onOpenCategory: (row: AggregatedStatsCategory) => void;
+  onOpenOperations: (row: AggregatedStatsCategory) => void;
   onAddOrphan: (orphan: ForecastStatsPreviousCategory) => void;
 }) {
   return (
@@ -1004,6 +1037,7 @@ function ForecastCategoryColumn({
               }
               previousMonthLabel={previousMonthLabel}
               onOpen={() => onOpenCategory(row)}
+              onOpenOperations={() => onOpenOperations(row)}
             />
           ))}
           {orphans.map((orphan) => (
@@ -1026,12 +1060,14 @@ function ForecastCategoryRow({
   previous,
   previousMonthLabel,
   onOpen,
+  onOpenOperations,
 }: {
   row: AggregatedStatsCategory;
   tone: 'income' | 'expense';
   previous?: ForecastStatsPreviousCategory;
   previousMonthLabel: string;
   onOpen: () => void;
+  onOpenOperations: () => void;
 }) {
   const remainingLabel =
     row.remainingCents >= 0
@@ -1040,12 +1076,8 @@ function ForecastCategoryRow({
   const daysLabel = row.scheduledDays.length > 0 ? ` · j.${row.scheduledDays.join(', ')}` : '';
 
   return (
-    <li>
-      <button
-        type="button"
-        onClick={onOpen}
-        className="w-full cursor-pointer rounded-control border border-border-subtle bg-page/70 px-2.5 py-2 text-left transition-colors hover:border-accent/40 hover:bg-accent-tint/30 dark:bg-page/20 dark:hover:bg-page/35"
-      >
+    <li className="flex items-center gap-0.5 rounded-control border border-border-subtle bg-page/70 transition-colors hover:border-accent/40 hover:bg-accent-tint/30 dark:bg-page/20 dark:hover:bg-page/35">
+      <button type="button" onClick={onOpen} className="min-w-0 flex-1 cursor-pointer px-2.5 py-2 text-left">
         <div className="flex items-center gap-2">
           <span
             className="flex size-7 shrink-0 items-center justify-center rounded-full text-white"
@@ -1101,8 +1133,25 @@ function ForecastCategoryRow({
               </p>
             </div>
           </div>
-          <Icon name="chevron_right" className="shrink-0 text-fg-muted" aria-hidden />
         </div>
+      </button>
+      <Tooltip content="Voir les opérations" className="shrink-0">
+        <button
+          type="button"
+          aria-label={`Opérations de ${row.categoryName}`}
+          onClick={onOpenOperations}
+          className="inline-flex size-8 cursor-pointer items-center justify-center rounded-control-sm text-fg-muted transition-colors hover:bg-accent-tint/50 hover:text-accent"
+        >
+          <Icon name="receipt_long" className="text-[18px]!" />
+        </button>
+      </Tooltip>
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Échéances de ${row.categoryName}`}
+        className="mr-1.5 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-control-sm text-fg-muted transition-colors hover:bg-accent-tint/50 hover:text-accent"
+      >
+        <Icon name="chevron_right" className="text-[18px]!" />
       </button>
     </li>
   );

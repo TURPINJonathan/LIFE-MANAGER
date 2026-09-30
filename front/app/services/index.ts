@@ -13,6 +13,7 @@ export {
   fetchForecast,
   fetchForecastStats,
   fetchForecastStatsDashboard,
+  fetchCategoryMonthTransactions,
   fetchLedger,
   listAccounts,
   updateAccount,

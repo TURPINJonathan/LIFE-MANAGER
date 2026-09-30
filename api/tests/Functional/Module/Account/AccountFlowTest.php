@@ -142,6 +142,71 @@ final class AccountFlowTest extends WebTestCase
         self::assertSame(9_000, $page2['transactions'][0]['balanceAfterCents']);
     }
 
+    public function testListTransactionsFilteredByCategoryAndYearMonth(): void
+    {
+        $courses = $this->json('POST', '/api/categories', [
+            'name'  => 'Courses',
+            'icon'  => 'shopping_cart',
+            'color' => '#16A34A',
+            'kind'  => 'expense',
+        ]);
+        $loyer = $this->json('POST', '/api/categories', [
+            'name'  => 'Loyer',
+            'icon'  => 'home',
+            'color' => '#2563EB',
+            'kind'  => 'expense',
+        ]);
+        $account = $this->json('POST', '/api/accounts', ['name' => 'Comptes Ada']);
+        $sub = $this->json('POST', '/api/accounts/'.$account['id'].'/sub-accounts', [
+            'name'                => 'Courant',
+            'icon'                => 'account_balance',
+            'color'               => '#2563EB',
+            'openingBalanceCents' => 10_000,
+        ]);
+
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/transactions', [
+            'categoryId'    => $courses['id'],
+            'operationDate' => '2026-01-05',
+            'effectiveDate' => '2026-01-05',
+            'paymentMethod' => 'card',
+            'designation'   => 'Janvier courses',
+            'amountCents'   => 1_000,
+        ]);
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/transactions', [
+            'categoryId'    => $courses['id'],
+            'operationDate' => '2026-02-05',
+            'effectiveDate' => '2026-02-05',
+            'paymentMethod' => 'card',
+            'designation'   => 'Février courses',
+            'amountCents'   => 2_000,
+        ]);
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/transactions', [
+            'categoryId'    => $loyer['id'],
+            'operationDate' => '2026-01-10',
+            'effectiveDate' => '2026-01-10',
+            'paymentMethod' => 'transfer',
+            'designation'   => 'Janvier loyer',
+            'amountCents'   => 3_000,
+        ]);
+
+        $filtered = $this->json(
+            'GET',
+            '/api/sub-accounts/'.$sub['id'].'/transactions?categoryId='.$courses['id'].'&yearMonth=2026-01',
+        );
+        self::assertSame($courses['id'], $filtered['categoryId']);
+        self::assertSame('2026-01', $filtered['yearMonth']);
+        self::assertCount(1, $filtered['transactions']);
+        self::assertSame('Janvier courses', $filtered['transactions'][0]['designation']);
+        self::assertNull($filtered['transactions'][0]['balanceAfterCents']);
+
+        $this->client->request(
+            'GET',
+            '/api/sub-accounts/'.$sub['id'].'/transactions?categoryId='.$courses['id'],
+            server: $this->authHeaders(),
+        );
+        self::assertResponseStatusCodeSame(400);
+    }
+
     /**
      * @param array<string, mixed>|null $body
      *

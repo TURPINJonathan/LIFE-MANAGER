@@ -6,6 +6,7 @@ namespace App\Module\Account\Repository;
 
 use App\Module\Account\Domain\Entity\SubAccount;
 use App\Module\Account\Domain\Entity\Transaction;
+use App\Module\Category\Domain\Entity\Category;
 use App\Module\Security\Domain\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -164,9 +165,9 @@ class TransactionRepository extends ServiceEntityRepository
         SubAccount $subAccount,
         \DateTimeImmutable $from,
         \DateTimeImmutable $to,
+        ?Category $category = null,
     ): array {
-        /** @var list<Transaction> $rows */
-        $rows = $this->createQueryBuilder('t')
+        $qb = $this->createQueryBuilder('t')
             ->andWhere('t.subAccount = :sub')
             ->andWhere('t.operationDate >= :from')
             ->andWhere('t.operationDate <= :to')
@@ -174,9 +175,15 @@ class TransactionRepository extends ServiceEntityRepository
             ->setParameter('from', $from)
             ->setParameter('to', $to)
             ->orderBy('t.operationDate', 'ASC')
-            ->addOrderBy('t.id', 'ASC')
-            ->getQuery()
-            ->getResult();
+            ->addOrderBy('t.id', 'ASC');
+
+        if (null !== $category) {
+            $qb->andWhere('t.category = :category')
+                ->setParameter('category', $category);
+        }
+
+        /** @var list<Transaction> $rows */
+        $rows = $qb->getQuery()->getResult();
 
         return $rows;
     }

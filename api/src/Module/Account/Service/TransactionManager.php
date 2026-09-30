@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Module\Account\Service;
 
+use App\Module\Account\Domain\Entity\MonthlyForecast;
 use App\Module\Account\Domain\Entity\Transaction;
 use App\Module\Account\Domain\Enum\PaymentMethod;
 use App\Module\Account\Exception\InvalidTransactionException;
@@ -74,6 +75,41 @@ final class TransactionManager
             'transactions'        => $rows,
             'hasMore'             => $hasMore,
             'nextOffset'          => $hasMore ? $offset + $limit : null,
+        ];
+    }
+
+    /**
+     * Opérations d’une catégorie pour un mois (operation_date), ordre chronologique.
+     * Aligné sur le réalisé forecast — sans pagination ni solde courant.
+     *
+     * @return array{
+     *   categoryId: string,
+     *   yearMonth: string,
+     *   transactions: list<array<string, mixed>>
+     * }
+     */
+    public function listForCategoryMonth(string $subAccountId, string $categoryId, string $yearMonth): array
+    {
+        try {
+            $ym = MonthlyForecast::normalizeYearMonth($yearMonth);
+        } catch (\InvalidArgumentException $e) {
+            throw new InvalidTransactionException($e->getMessage(), 0, $e);
+        }
+
+        $sub = $this->accounts->requireSubAccountEntity($subAccountId);
+        $category = $this->categories->requireOwnedEntity($categoryId);
+        $from = new \DateTimeImmutable($ym.'-01');
+        $to = $from->modify('last day of this month');
+
+        $rows = [];
+        foreach ($this->transactions->listForSubAccountBetween($sub, $from, $to, $category) as $transaction) {
+            $rows[] = $this->serialize($transaction, null);
+        }
+
+        return [
+            'categoryId'   => (string) $category->getId(),
+            'yearMonth'    => $ym,
+            'transactions' => $rows,
         ];
     }
 

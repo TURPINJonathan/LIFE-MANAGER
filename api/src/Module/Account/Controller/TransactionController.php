@@ -27,13 +27,31 @@ final class TransactionController extends AbstractController
     #[Route('/api/sub-accounts/{subAccountId}/transactions', name: 'api_transactions_list', methods: ['GET'])]
     public function list(string $subAccountId, Request $request): JsonResponse
     {
-        $limit = $request->query->getInt('limit', 50);
-        $offset = $request->query->getInt('offset', 0);
+        $categoryId = trim($request->query->getString('categoryId'));
+        $yearMonth = trim($request->query->getString('yearMonth'));
+        $hasCategory = '' !== $categoryId;
+        $hasYearMonth = '' !== $yearMonth;
+
+        if ($hasCategory xor $hasYearMonth) {
+            return JsonRequest::error(
+                new InvalidTransactionException('Les paramètres categoryId et yearMonth doivent être fournis ensemble.'),
+                Response::HTTP_BAD_REQUEST,
+            );
+        }
 
         try {
+            if ($hasCategory && $hasYearMonth) {
+                return new JsonResponse($this->transactions->listForCategoryMonth($subAccountId, $categoryId, $yearMonth));
+            }
+
+            $limit = $request->query->getInt('limit', 50);
+            $offset = $request->query->getInt('offset', 0);
+
             return new JsonResponse($this->transactions->listForSubAccount($subAccountId, $limit, $offset));
-        } catch (SubAccountNotFoundException $e) {
+        } catch (SubAccountNotFoundException|CategoryNotFoundException $e) {
             return JsonRequest::error($e, Response::HTTP_NOT_FOUND);
+        } catch (InvalidTransactionException $e) {
+            return JsonRequest::error($e, Response::HTTP_BAD_REQUEST);
         }
     }
 

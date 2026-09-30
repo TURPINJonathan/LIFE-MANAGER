@@ -1,5 +1,6 @@
 import type {
   Account,
+  CategoryMonthTransactionsPayload,
   ForecastLineInput,
   ForecastStats,
   LedgerPayload,
@@ -113,6 +114,20 @@ export async function fetchLedger(
     return parseError(response, 'Impossible de charger le relevé.');
   }
   return readJson<LedgerPayload>(response);
+}
+
+export async function fetchCategoryMonthTransactions(
+  token: string,
+  subAccountId: string,
+  categoryId: string,
+  yearMonth: string,
+): Promise<CategoryMonthTransactionsPayload> {
+  const params = new URLSearchParams({ categoryId, yearMonth });
+  const response = await apiFetch(`/api/sub-accounts/${subAccountId}/transactions?${params}`, { method: 'GET' }, token);
+  if (!response.ok) {
+    return parseError(response, 'Impossible de charger les opérations.');
+  }
+  return readJson<CategoryMonthTransactionsPayload>(response);
 }
 
 export type TransactionInput = {

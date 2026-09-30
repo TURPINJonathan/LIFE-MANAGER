@@ -63,7 +63,7 @@ export type LedgerTransaction = {
   checkNumber: string | null;
   designation: string;
   amountCents: number;
-  balanceAfterCents: number;
+  balanceAfterCents: number | null;
   hasAttachment: boolean;
   attachmentUrl: string | null;
   attachmentOriginalName: string | null;
@@ -81,6 +81,12 @@ export type LedgerPayload = {
   transactions: LedgerTransaction[];
   hasMore: boolean;
   nextOffset: number | null;
+};
+
+export type CategoryMonthTransactionsPayload = {
+  categoryId: string;
+  yearMonth: string;
+  transactions: LedgerTransaction[];
 };
 
 export type ForecastLine = {
