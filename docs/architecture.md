@@ -31,7 +31,7 @@ API Platform sert les ressources et la doc OpenAPI. Les points d'entrée techniq
 - **`Module/Security`** — utilisateurs, JWT, `/api/login`, `/api/me`
 - **`Module/Category`** — catégories (icône, couleur, kind) scopées à l’utilisateur ; **enseignes liées** (`merchantIds`) et **favori** optionnel (`favoriteMerchantId`, auto si une seule enseigne)
 - **`Module/Merchant`** — enseignes (label, couleur, **icône XOR image**) scopées à l’utilisateur ; **catégories liées** (`categoryIds`) ; image stockée sous `var/uploads` (gzip) et servie décompressée via endpoint JWT
-- **`Module/Account`** — comptes → sous-comptes → transactions (`ledger_transaction`), solde en centimes, **forecasts mensuels** (`monthly_forecast` / `forecast_line`) ; enseigne et pièce jointe **optionnelles** sur une opération (photo/PDF sous `var/uploads` en gzip, download JWT décompressé). À la saisie, le choix d’une catégorie préremplit l’enseigne favorite ; le select enseigne liste d’abord les liées. `GET /api/sub-accounts/{id}/transactions?limit=&offset=` renvoie le relevé **plus récent en premier**, avec `hasMore` / `nextOffset` et `balanceAfterCents` cohérents page par page.
+- **`Module/Account`** — comptes → sous-comptes → transactions (`ledger_transaction`), solde en centimes, **forecasts mensuels** (`monthly_forecast` / `forecast_line`) ; enseigne et pièce jointe **optionnelles** sur une opération (photo/PDF sous `var/uploads` en gzip, download JWT décompressé). À la saisie, le choix d’une catégorie préremplit l’enseigne favorite ; le select enseigne liste d’abord les liées. `GET /api/sub-accounts/{id}/transactions?limit=&offset=` renvoie le relevé **plus récent en premier**, avec `hasMore` / `nextOffset` et `balanceAfterCents` cohérents page par page. Avec `categoryId` + `yearMonth` (ensemble), même endpoint filtre par catégorie et mois (`operationDate`), ordre chronologique, sans pagination ni solde courant.
 
 Montants absolus à la saisie ; le signe (+ crédit / − débit) est dérivé du type de catégorie (`expense` / `income`). Pour une catégorie `both`, le client envoie aussi `flow`.
 
@@ -80,6 +80,10 @@ front/app/
 ```
 
 Les routes déclarées dans `app/routes.ts` rendent une page ou un layout. La logique d'accès est dans `security/`, l'appel réseau dans `services/`.
+
+### Titres d’onglet
+
+Chaque route exporte `meta()` avec `appTitle(…)` (`Partie · Life Manager`). Le ledger pose aussi le titre côté client via `useDocumentTitle` (nom du sous-compte + Opérations / Budget).
 
 ## Données
 

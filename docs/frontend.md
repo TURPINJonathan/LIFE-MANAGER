@@ -25,7 +25,7 @@ Les utilities de marque (`bg-accent`, `text-brand`, …) sont les mêmes partout
 
 - **`/comptes`** : dashboard en grille 4 colonnes alignées (solde 1 + comptes comptes 1 chacun ; dessous 2+1+1 : graphique, **Échéances**, **Répartition**). Stats via `fetchForecastStatsDashboard` ; le graphique peut masquer/afficher M−1 sans recharger.
 - **`/comptes/:subAccountId`** : chrome détail épinglé ; toggle compact Opérations / Budget ; budget synchronisé sur `?vue=budget&mois=YYYY-MM` ; actions budget (Modifier / Supprimer) et création opération en haut à droite ; switcher. **Opérations** : `thead` sticky, pagination API (`limit`/`offset`, pages de 50) et chargement de la suite au scroll.
-- **Budget** : vue stats toujours visible ; **+** sur Revenus/Dépenses ouvre un dialog (catégorie, montant TPE, jour) ; clic sur une carte → échéances ; duplication M−1 en en-tête ; vue tableur (dialog) pour édition groupée ; suppression du budget dans le chrome du ledger.
+- **Budget** : vue stats toujours visible ; **+** sur Revenus/Dépenses ouvre un dialog (catégorie, montant TPE, jour) ; clic sur une carte → échéances ; bouton reçu → liste des opérations du mois pour la catégorie ; duplication M−1 en en-tête ; vue tableur (dialog) pour édition groupée ; suppression du budget dans le chrome du ledger.
 - **Paramètres** : `/parametres` → profil / comptes / catégories / **enseignes** ; rail sections (desktop) + pills (mobile) ; contenu en `SectionCard` ; archivage via `ConfirmDialog`.
 - **Opération** : catégorie (création à la volée) ; **enseigne optionnelle** (auto-favori de la catégorie si défini ; select : liées A–Z puis autres A–Z) ; **pièce jointe optionnelle** (caméra ou fichier PDF/image) ; si la catégorie n’est pas dans le budget du mois (date d’opération), une ligne forecast est ajoutée automatiquement. **Montant** : saisie type TPE (`TpeAmountInput`) — chiffres uniquement, virgule implicite (ex. `1` `2` `5` → `1,25 €`), aussi dans l’éditeur de budget.
 - **Catégories / enseignes** : liaison N–N ; une enseigne favorite par catégorie (auto si une seule).
@@ -74,6 +74,10 @@ Paires canoniques :
 `AppShell` compose `TopBar`, `Nav` (rail + tab), le menu compte (`Dialog`) et la surface principale `APP_MAIN_SURFACE_CLASSES`.
 
 Les entrées de navigation sont dans `NAV_ITEMS` / `MENU_ITEMS` / `CREATE_ENTRIES`.
+
+### Titres d’onglet
+
+`appTitle(…)` dans `meta()` de chaque route (`Partie · Life Manager`). Sur le ledger, `useDocumentTitle` affine avec le nom du sous-compte et la vue (Opérations / Budget).
 
 ## Commandes
 
