@@ -10,6 +10,14 @@ export const APP_ROUTE = {
   settingsSection: '/parametres/:section',
 } as const;
 
+export const APP_NAME = 'Life Manager';
+
+/** Titre d’onglet : `Partie · … · Life Manager`. Sans partie → `Life Manager`. */
+export function appTitle(...parts: Array<string | null | undefined>): string {
+  const cleaned = parts.map((part) => part?.trim()).filter((part): part is string => Boolean(part));
+  return cleaned.length > 0 ? `${cleaned.join(' · ')} · ${APP_NAME}` : APP_NAME;
+}
+
 export function accountLedgerPath(subAccountId: string, view?: 'operations' | 'budget'): string {
   const base = `/comptes/${subAccountId}`;
   if (!view || view === 'operations') {

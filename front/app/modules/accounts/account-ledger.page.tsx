@@ -30,8 +30,10 @@ import {
   PAYMENT_METHOD_ICONS,
   PAYMENT_METHOD_LABELS,
   PAYMENT_METHODS,
+  appTitle,
   currentYearMonth,
 } from '@constants';
+import { useDocumentTitle } from '@hooks';
 import { CategoryQuickCreate } from '@categories';
 import { MerchantQuickCreate, MerchantVisual } from '@merchants';
 import {
@@ -116,6 +118,8 @@ export function AccountLedgerPage() {
   const [pendingDelete, setPendingDelete] = useState<LedgerTransaction | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [budgetActions, setBudgetActions] = useState<ForecastChromeActions | null>(null);
+
+  useDocumentTitle(appTitle(ledger?.subAccount.name ?? 'Compte', view === 'budget' ? 'Budget' : 'Opérations'));
 
   const form = useForm<TxForm>({
     defaultValues: {
@@ -796,13 +800,13 @@ export function AccountLedgerPage() {
                       </td>
                       <td className="whitespace-nowrap px-2 py-2.5 text-right align-middle text-control tabular-nums sm:px-3">
                         {tx.effectiveDate ? (
-                          <span className={signedAmountClass(tx.balanceAfterCents)}>
-                            {formatCents(tx.balanceAfterCents)}
+                          <span className={signedAmountClass(tx.balanceAfterCents ?? 0)}>
+                            {formatCents(tx.balanceAfterCents ?? 0)}
                           </span>
                         ) : (
                           <Tooltip content="Solde provisoire (opération en attente)">
                             <span className="inline-flex items-center justify-center rounded-full bg-accent-tint px-2.5 py-0.5 font-medium text-accent-press">
-                              {formatCents(tx.balanceAfterCents)}
+                              {formatCents(tx.balanceAfterCents ?? 0)}
                             </span>
                           </Tooltip>
                         )}

@@ -18,7 +18,15 @@ export {
   type IconCatalogEntry,
 } from './icon-catalog.constants';
 export { CREATE_ENTRIES, MENU_ITEMS, NAV_ITEMS } from './navigation.constants';
-export { APP_ROUTE, accountLedgerPath, currentYearMonth, settingsPath, shiftYearMonth } from './route.constants';
+export {
+  APP_ROUTE,
+  APP_NAME,
+  accountLedgerPath,
+  appTitle,
+  currentYearMonth,
+  settingsPath,
+  shiftYearMonth,
+} from './route.constants';
 export {
   APP_MAIN_SURFACE_CLASSES,
   APP_PAGE_FILL_CLASSES,

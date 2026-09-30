@@ -2,9 +2,14 @@ import './app.css';
 
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
 
+import { APP_NAME } from '@constants';
 import { useApplyTheme } from '@hooks';
 
 import type { ReactNode } from 'react';
+
+export function meta() {
+  return [{ title: APP_NAME }];
+}
 
 export function links() {
   return [
