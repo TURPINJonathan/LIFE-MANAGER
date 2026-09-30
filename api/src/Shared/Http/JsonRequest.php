@@ -40,7 +40,7 @@ final class JsonRequest
     public static function requireString(array $data, string $key): string
     {
         if (!isset($data[$key]) || !\is_string($data[$key]) || '' === trim($data[$key])) {
-            throw new BadRequestHttpException(sprintf('Le champ "%s" est requis.', $key));
+            throw new BadRequestHttpException(\sprintf('Le champ "%s" est requis.', $key));
         }
 
         return trim($data[$key]);
@@ -55,7 +55,7 @@ final class JsonRequest
             return null;
         }
         if (!\is_string($data[$key])) {
-            throw new BadRequestHttpException(sprintf('Le champ "%s" doit être une chaîne.', $key));
+            throw new BadRequestHttpException(\sprintf('Le champ "%s" doit être une chaîne.', $key));
         }
 
         $value = trim($data[$key]);
@@ -69,7 +69,7 @@ final class JsonRequest
     public static function requireInt(array $data, string $key): int
     {
         if (!isset($data[$key]) || !\is_int($data[$key])) {
-            throw new BadRequestHttpException(sprintf('Le champ "%s" doit être un entier.', $key));
+            throw new BadRequestHttpException(\sprintf('Le champ "%s" doit être un entier.', $key));
         }
 
         return $data[$key];
@@ -83,13 +83,13 @@ final class JsonRequest
     public static function requireStringList(array $data, string $key): array
     {
         if (!isset($data[$key]) || !\is_array($data[$key])) {
-            throw new BadRequestHttpException(sprintf('Le champ "%s" doit être un tableau de chaînes.', $key));
+            throw new BadRequestHttpException(\sprintf('Le champ "%s" doit être un tableau de chaînes.', $key));
         }
 
         $values = [];
         foreach ($data[$key] as $item) {
             if (!\is_string($item) || '' === trim($item)) {
-                throw new BadRequestHttpException(sprintf('Le champ "%s" doit contenir uniquement des chaînes non vides.', $key));
+                throw new BadRequestHttpException(\sprintf('Le champ "%s" doit contenir uniquement des chaînes non vides.', $key));
             }
             $values[] = trim($item);
         }

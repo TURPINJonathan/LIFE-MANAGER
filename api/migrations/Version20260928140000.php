@@ -21,7 +21,7 @@ final class Version20260928140000 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        $this->addSql("UPDATE ledger_transaction SET effective_date = operation_date WHERE effective_date IS NULL");
+        $this->addSql('UPDATE ledger_transaction SET effective_date = operation_date WHERE effective_date IS NULL');
         $this->addSql('ALTER TABLE ledger_transaction ALTER COLUMN effective_date SET NOT NULL');
     }
 }

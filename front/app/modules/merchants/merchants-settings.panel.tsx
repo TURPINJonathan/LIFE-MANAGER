@@ -349,7 +349,7 @@ export function MerchantsSettingsPanel() {
                   onDragLeave={onDragLeave}
                   onDrop={onDrop}
                   className={cn(
-                    'flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-panel border border-dashed px-4 py-8 transition-colors',
+                    'flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-control border border-dashed px-4 py-8 transition-colors',
                     dragging
                       ? 'border-accent bg-accent-tint/40'
                       : 'border-border-subtle bg-elevated/40 hover:border-accent/60',
@@ -362,7 +362,7 @@ export function MerchantsSettingsPanel() {
                           name={previewName}
                           color={watched.color}
                           localImageSrc={imagePreviewUrl}
-                          className="size-36 rounded-panel"
+                          className="size-36 rounded-control"
                           iconClassName="text-4xl"
                         />
                       ) : editing ? (
@@ -371,7 +371,7 @@ export function MerchantsSettingsPanel() {
                           color={watched.color}
                           icon={editing.icon}
                           imageUrl={editing.imageUrl}
-                          className="size-36 rounded-panel"
+                          className="size-36 rounded-control"
                           iconClassName="text-4xl"
                         />
                       ) : null}
@@ -398,12 +398,12 @@ export function MerchantsSettingsPanel() {
                   />
                 </div>
               ) : (
-                <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 rounded-panel border border-border-subtle bg-elevated/40 px-4 py-8">
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 rounded-control border border-border-subtle bg-elevated/40 px-4 py-8">
                   <MerchantVisual
                     name={previewName}
                     color={watched.color}
                     icon={watched.icon}
-                    className="size-36 rounded-panel"
+                    className="size-36 rounded-control"
                     iconClassName="text-4xl"
                   />
                   <p className="text-center text-control text-fg-muted">{previewName}</p>

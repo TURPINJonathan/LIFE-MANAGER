@@ -60,20 +60,10 @@ export function SubAccountSwitcher({ accounts, activeId, className }: SubAccount
                 />
 
                 <div className="relative z-10 min-w-0">
-                  <p
-                    className={cn(
-                      'truncate text-control font-semibold',
-                      active ? 'text-white' : 'text-fg-primary',
-                    )}
-                  >
+                  <p className={cn('truncate text-control font-semibold', active ? 'text-white' : 'text-fg-primary')}>
                     {sub.name}
                   </p>
-                  <p
-                    className={cn(
-                      'truncate text-[11px] leading-snug',
-                      active ? 'text-white/75' : 'text-fg-muted',
-                    )}
-                  >
+                  <p className={cn('truncate text-[11px] leading-snug', active ? 'text-white/75' : 'text-fg-muted')}>
                     {sub.accountName}
                   </p>
                 </div>

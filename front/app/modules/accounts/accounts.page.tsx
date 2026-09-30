@@ -68,8 +68,22 @@ function FlowProgress({
   const barWidth = percent === null ? 0 : Math.min(percent, 100);
 
   return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <div className="flex items-center gap-1.5 text-control font-medium text-fg-secondary">
+    <div
+      className={cn(
+        'flex min-w-0 flex-col gap-1 rounded-control border p-2.5',
+        tone === 'income'
+          ? 'border-success/25 bg-success/8'
+          : over
+            ? 'border-error/25 bg-error/8'
+            : 'border-accent/25 bg-accent-tint/70',
+      )}
+    >
+      <div
+        className={cn(
+          'flex items-center gap-1.5 text-control font-medium',
+          tone === 'income' ? 'text-success-strong' : over ? 'text-error' : 'text-accent-press',
+        )}
+      >
         <Icon name={icon} className="text-icon-sm" />
         <span className="truncate">{label}</span>
       </div>
@@ -83,7 +97,7 @@ function FlowProgress({
         {plannedCents > 0 ? <span className="font-normal text-fg-muted"> / {formatCents(plannedCents)}</span> : null}
         {percent !== null ? <span className="ml-1 font-normal text-fg-muted">({percent}%)</span> : null}
       </p>
-      <div className="h-1 overflow-hidden rounded-full bg-subtle">
+      <div className="h-1.5 overflow-hidden rounded-full bg-elevated/80">
         <div
           className={cn(
             'h-full rounded-full transition-[width]',
@@ -380,15 +394,28 @@ export function AccountsPage() {
         ) : (
           <>
             <div className="grid gap-4 lg:grid-cols-4 lg:items-stretch">
-              <section className="flex min-w-0 flex-col gap-3 rounded-panel border border-border-subtle bg-elevated p-3">
-                <div className="min-h-[4.25rem]">
+              <section
+                className={cn(
+                  'relative flex min-w-0 flex-col gap-3 overflow-hidden rounded-panel p-3',
+                  totalBalance < 0 ? 'bg-error/8' : 'bg-success/8',
+                )}
+              >
+                <Icon
+                  name="account_balance_wallet"
+                  aria-hidden="true"
+                  className={cn(
+                    'pointer-events-none absolute top-1/2 -right-10 -translate-y-1/2 text-[10rem]! leading-none opacity-[0.12] sm:-right-12 sm:text-[12rem]!',
+                    totalBalance < 0 ? 'text-error' : 'text-success-strong',
+                  )}
+                />
+                <div className="relative z-10 min-h-[4.25rem]">
                   <div className="flex items-baseline justify-between gap-2">
-                    <p className="text-control font-medium text-fg-muted">Solde combiné</p>
+                    <p className="text-control font-semibold text-fg-primary">Solde combiné</p>
                     <p className="text-[11px] text-fg-muted">{monthLabel}</p>
                   </div>
                   <p
                     className={cn(
-                      'mt-0.5 text-[1.5rem] font-bold tracking-tight tabular-nums',
+                      'mt-1 text-[1.65rem] font-bold tracking-tight tabular-nums sm:text-[1.85rem]',
                       signedAmountClass(totalBalance),
                     )}
                   >
@@ -417,7 +444,7 @@ export function AccountsPage() {
                   </p>
                 </div>
 
-                <div className="mt-auto border-t border-border-subtle pt-3">
+                <div className="relative z-10 mt-auto border-t border-border-subtle/80 pt-3">
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <p className="text-control font-medium text-fg-secondary">Flux du mois</p>
                     {forecast.meta ? (
@@ -437,7 +464,7 @@ export function AccountsPage() {
                       message="Ajoute un budget sur un sous-compte pour suivre le flux."
                     />
                   ) : (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       <FlowProgress
                         label="Revenus"
                         icon="arrow_upward"
@@ -457,89 +484,115 @@ export function AccountsPage() {
                 </div>
               </section>
 
-              {groups.map(({ account, balanceCents, subs: accountSubs }) => (
-                <section
-                  key={account.id}
-                  className={cn(
-                    'flex min-w-0 flex-col gap-2 rounded-panel border border-border-subtle bg-elevated p-3',
-                    groups.length === 1 && 'lg:col-span-3',
-                  )}
-                >
-                  <div className="flex min-h-[4.25rem] shrink-0 items-end justify-between gap-2 px-0.5">
-                    <div className="min-w-0">
-                      <h2 className="truncate text-body font-semibold text-fg-primary">{account.name}</h2>
-                      <p className="text-control text-fg-muted">
-                        {accountSubs.length === 0
-                          ? 'Aucun sous-compte'
-                          : `${accountSubs.length} sous-compte${accountSubs.length > 1 ? 's' : ''}`}
-                      </p>
-                    </div>
-                    {accountSubs.length > 0 && (
-                      <p
-                        className={cn(
-                          'min-w-[6.5rem] shrink-0 text-right text-body font-semibold tabular-nums',
-                          signedAmountClass(balanceCents),
-                        )}
-                      >
-                        {formatCents(balanceCents)}
-                      </p>
+              {groups.map(({ account, balanceCents, subs: accountSubs }) => {
+                const accentSub = accountSubs[0];
+                const accentColor = accentSub?.color;
+                return (
+                  <section
+                    key={account.id}
+                    className={cn(
+                      'relative flex min-w-0 flex-col gap-2 overflow-hidden rounded-panel p-3',
+                      groups.length === 1 && 'lg:col-span-3',
+                      !accentColor && 'bg-elevated',
                     )}
-                  </div>
-
-                  {accountSubs.length === 0 ? (
-                    <div className="rounded-control border border-dashed border-border-subtle bg-page/60 px-3 py-3 text-control text-fg-muted dark:bg-page/20">
-                      <p>
-                        Ajoute un sous-compte dans{' '}
-                        <Link to={settingsPath('comptes')} className="text-accent hover:underline">
-                          les paramètres
-                        </Link>
-                        .
-                      </p>
+                    style={
+                      accentColor
+                        ? {
+                            backgroundColor: `color-mix(in srgb, ${accentColor} 12%, var(--color-elevated, #fff))`,
+                          }
+                        : undefined
+                    }
+                  >
+                    {accentSub ? (
+                      <Icon
+                        name={accentSub.icon}
+                        aria-hidden="true"
+                        className="pointer-events-none absolute top-[55%] -right-14 -translate-y-1/2 !text-[14rem] leading-none opacity-[0.14] sm:-right-16 sm:!text-[16rem]"
+                        style={{ color: accentColor }}
+                      />
+                    ) : null}
+                    <div className="relative z-10 flex min-h-[4.25rem] shrink-0 items-end justify-between gap-2 px-0.5">
+                      <div className="min-w-0">
+                        <h2 className="truncate text-body font-semibold text-fg-primary">{account.name}</h2>
+                        <p className="text-control text-fg-muted">
+                          {accountSubs.length === 0
+                            ? 'Aucun sous-compte'
+                            : `${accountSubs.length} sous-compte${accountSubs.length > 1 ? 's' : ''}`}
+                        </p>
+                      </div>
+                      {accountSubs.length > 0 && (
+                        <p
+                          className={cn(
+                            'min-w-[6.5rem] shrink-0 text-right text-body font-semibold tabular-nums',
+                            signedAmountClass(balanceCents),
+                          )}
+                        >
+                          {formatCents(balanceCents)}
+                        </p>
+                      )}
                     </div>
-                  ) : (
-                    <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                      {accountSubs.map((sub) => {
-                        const status = budgetStatusLabel(forecast.bySubId[sub.id]);
-                        return (
-                          <li key={sub.id}>
-                            <ListCard
-                              to={accountLedgerPath(sub.id)}
-                              title={sub.name}
-                              subtitle={hasForecastData ? budgetSubtitle(status) : undefined}
-                              avatarIcon={sub.icon}
-                              tintColor={sub.color}
-                              meta={
-                                <span
-                                  className={cn(
-                                    'inline-block min-w-[6.5rem] text-right text-body font-semibold tabular-nums',
-                                    signedAmountClass(sub.balanceCents),
-                                  )}
-                                >
-                                  {formatCents(sub.balanceCents)}
-                                </span>
-                              }
-                              actions={
-                                <Link
-                                  to={accountLedgerPath(sub.id, 'budget')}
-                                  className="inline-flex size-8 items-center justify-center rounded-control text-fg-muted hover:bg-subtle hover:text-accent"
-                                  aria-label={`Budget ${sub.name}`}
-                                  title="Budget"
-                                >
-                                  <Icon name="calendar_month" className="text-icon-sm" />
-                                </Link>
-                              }
-                            />
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </section>
-              ))}
+
+                    {accountSubs.length === 0 ? (
+                      <div className="relative z-10 rounded-control border border-dashed border-border-subtle bg-elevated/70 px-3 py-3 text-control text-fg-muted">
+                        <p>
+                          Ajoute un sous-compte dans{' '}
+                          <Link to={settingsPath('comptes')} className="text-accent hover:underline">
+                            les paramètres
+                          </Link>
+                          .
+                        </p>
+                      </div>
+                    ) : (
+                      <ul className="relative z-10 m-0 flex list-none flex-col gap-2 p-0">
+                        {accountSubs.map((sub) => {
+                          const status = budgetStatusLabel(forecast.bySubId[sub.id]);
+                          return (
+                            <li key={sub.id}>
+                              <ListCard
+                                to={accountLedgerPath(sub.id)}
+                                title={sub.name}
+                                subtitle={hasForecastData ? budgetSubtitle(status) : undefined}
+                                avatarIcon={sub.icon}
+                                tintColor={sub.color}
+                                meta={
+                                  <span
+                                    className={cn(
+                                      'inline-block min-w-[6.5rem] text-right text-body font-semibold tabular-nums',
+                                      signedAmountClass(sub.balanceCents),
+                                    )}
+                                  >
+                                    {formatCents(sub.balanceCents)}
+                                  </span>
+                                }
+                                actions={
+                                  <Link
+                                    to={accountLedgerPath(sub.id, 'budget')}
+                                    className="inline-flex size-8 items-center justify-center rounded-control text-fg-muted hover:bg-subtle hover:text-accent"
+                                    aria-label={`Budget ${sub.name}`}
+                                    title="Budget"
+                                  >
+                                    <Icon name="calendar_month" className="text-icon-sm" />
+                                  </Link>
+                                }
+                              />
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </section>
+                );
+              })}
             </div>
 
             <div className="grid gap-4 lg:grid-cols-4 lg:items-stretch">
-              <SectionCard title="Solde du mois" icon="analytics" className="min-w-0 lg:col-span-2">
+              <SectionCard
+                title="Solde du mois"
+                icon="analytics"
+                tone="accent"
+                bordered={false}
+                className="min-w-0 lg:col-span-2"
+              >
                 {forecastLoading && timeline.points.length === 0 ? (
                   <p className="text-body text-fg-muted">Chargement de la projection…</p>
                 ) : timeline.points.length === 0 ? (
@@ -568,7 +621,13 @@ export function AccountsPage() {
                 )}
               </SectionCard>
 
-              <SectionCard title="Échéances" icon="event_upcoming" className="flex min-w-0 flex-col lg:col-span-1">
+              <SectionCard
+                title="Échéances"
+                icon="event_upcoming"
+                tone="brand"
+                bordered={false}
+                className="flex min-w-0 flex-col lg:col-span-1"
+              >
                 {upcomingDeadlines.length === 0 ? (
                   <EmptyState
                     compact
@@ -582,7 +641,7 @@ export function AccountsPage() {
                       <li key={item.key}>
                         <Link
                           to={accountLedgerPath(item.subAccountId, 'budget')}
-                          className="grid grid-cols-[2rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-control px-1 py-1.5 hover:bg-subtle"
+                          className="grid grid-cols-[2rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-control border border-border-subtle/80 bg-elevated/80 px-2 py-1.5 hover:border-border hover:bg-elevated"
                         >
                           <span className="text-center text-[11px] font-semibold tabular-nums text-fg-muted">
                             j.{item.day}
@@ -617,7 +676,13 @@ export function AccountsPage() {
                 )}
               </SectionCard>
 
-              <SectionCard title="Répartition" icon="pie_chart" className="flex min-w-0 flex-col lg:col-span-1">
+              <SectionCard
+                title="Répartition"
+                icon="pie_chart"
+                tone="success"
+                bordered={false}
+                className="flex min-w-0 flex-col lg:col-span-1"
+              >
                 {distribution.length === 0 ? (
                   <EmptyState
                     compact
@@ -626,12 +691,12 @@ export function AccountsPage() {
                     message="Les parts apparaîtront dès qu’un sous-compte aura un solde."
                   />
                 ) : (
-                  <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                  <ul className="m-0 flex list-none flex-col gap-2 p-0">
                     {distribution.map((sub) => (
                       <li key={sub.id}>
                         <Link
                           to={accountLedgerPath(sub.id)}
-                          className="grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 rounded-control hover:bg-subtle/80"
+                          className="grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 rounded-control border border-border-subtle/80 bg-elevated/80 px-2 py-2 hover:border-border hover:bg-elevated"
                         >
                           <span
                             className="row-span-2 flex size-7 items-center justify-center self-center rounded-control text-white"

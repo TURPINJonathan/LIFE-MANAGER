@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 
-import { Button, ConfirmDialog, Dialog, Icon, IconButton, Tooltip } from '@components';
-import { BUTTON_VARIANT, DIALOG_SIZE, ICON_BUTTON_VARIANT, currentYearMonth, shiftYearMonth } from '@constants';
+import { Button, ConfirmDialog, Dialog, Icon, Tooltip } from '@components';
+import { BUTTON_VARIANT, DIALOG_SIZE, currentYearMonth, shiftYearMonth } from '@constants';
 import { CategoryQuickCreate } from '@categories';
 import {
   ApiError,
@@ -343,21 +343,27 @@ export function ForecastPanel({
 
   const prevMonthLabel = useMemo(() => formatMonthLabel(shiftYearMonth(yearMonth, -1)), [yearMonth]);
 
-  useEffect(() => {
+  const publishChromeActions = useEffectEvent(() => {
     if (!onChromeActionsChange) return;
     onChromeActionsChange({
       busy,
       monthLabel: formatMonthLabel(yearMonth),
       onPrevMonth: () => setYearMonth((value) => shiftYearMonth(value, -1)),
       onNextMonth: () => setYearMonth((value) => shiftYearMonth(value, 1)),
-      onOpenSpreadsheet: () => openSpreadsheet(),
+      onOpenSpreadsheet: openSpreadsheet,
       canDelete: Boolean(forecast),
       onDelete: () => setDeleteOpen(true),
       canDuplicate: !forecast,
-      onDuplicate: () => void onDuplicate(),
+      onDuplicate: () => {
+        void onDuplicate();
+      },
       previousMonthLabel: prevMonthLabel,
     });
-    return () => onChromeActionsChange(null);
+  });
+
+  useEffect(() => {
+    publishChromeActions();
+    return () => onChromeActionsChange?.(null);
   }, [onChromeActionsChange, forecast, busy, yearMonth, prevMonthLabel]);
   const aggregatedCategories = useMemo(() => aggregateStatsCategories(stats?.categories ?? []), [stats?.categories]);
   const previousByKey = useMemo(() => {
@@ -700,7 +706,7 @@ export function ForecastPanel({
           )}
 
           {stats && stats.unbudgeted.items.length > 0 && (
-            <div className="rounded-panel border border-border-subtle bg-elevated p-4">
+            <div className="rounded-panel border border-border-subtle bg-elevated p-3">
               <p className="text-control font-medium text-fg-secondary">Hors budget</p>
               <ul className="mt-2 space-y-1">
                 {stats.unbudgeted.items.map((item) => (
@@ -877,7 +883,7 @@ function StatCard({
   return (
     <article
       className={cn(
-        'relative flex h-full min-h-[6.5rem] flex-col overflow-hidden rounded-panel p-3 sm:min-h-0 sm:p-4',
+        'relative flex h-full min-h-[6.5rem] flex-col overflow-hidden rounded-panel p-3 sm:min-h-0',
         surface,
       )}
     >
@@ -943,7 +949,7 @@ function ForecastCategoryColumn({
   onAddOrphan: (orphan: ForecastStatsPreviousCategory) => void;
 }) {
   return (
-    <section className="flex min-w-0 flex-col gap-3 rounded-panel border border-border-subtle bg-elevated p-3  sm:p-4">
+    <section className="flex min-w-0 flex-col gap-3 rounded-panel border border-border-subtle bg-elevated p-3">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">

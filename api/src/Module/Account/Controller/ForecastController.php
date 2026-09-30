@@ -57,7 +57,7 @@ final class ForecastController extends AbstractController
             }
             $payload = $this->forecasts->create($subAccountId, [
                 'yearMonth' => JsonRequest::requireString($data, 'yearMonth'),
-                'lines' => $lines,
+                'lines'     => $lines,
             ]);
         } catch (SubAccountNotFoundException|CategoryNotFoundException $e) {
             return JsonRequest::error($e, Response::HTTP_NOT_FOUND);

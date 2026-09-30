@@ -151,7 +151,7 @@ export function ForecastLineDialog({
       <form className="mt-4 flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
         {isEdit && editContext ? (
           <div className="grid gap-3 lg:grid-cols-2">
-            <div className="flex items-center gap-3 rounded-panel border border-border-subtle bg-subtle/60 p-3">
+            <div className="flex items-center gap-3 rounded-control border border-border-subtle bg-subtle/60 p-3">
               <span
                 className="flex size-11 shrink-0 items-center justify-center rounded-full text-white shadow-sm"
                 style={{ backgroundColor: editContext.categoryColor }}
@@ -188,7 +188,7 @@ export function ForecastLineDialog({
               </div>
             </div>
 
-            <div className="flex flex-col justify-center gap-2 rounded-panel border border-border-subtle bg-subtle/40 px-3 py-3">
+            <div className="flex flex-col justify-center gap-2 rounded-control border border-border-subtle bg-subtle/40 px-3 py-3">
               <p className="inline-flex items-center gap-1.5 text-control font-medium text-fg-muted">
                 <Icon name="history" className="text-icon-sm" />
                 {previousMonthLabel}
@@ -212,7 +212,7 @@ export function ForecastLineDialog({
         ) : null}
 
         {isEdit && otherLines.length > 0 ? (
-          <div className="rounded-panel border border-border-subtle bg-page/50 px-3 py-2.5 dark:bg-page/20">
+          <div className="rounded-control border border-border-subtle bg-page/50 px-3 py-2.5 dark:bg-page/20">
             <p className="mb-2 text-[11px] font-medium tracking-wide text-fg-muted uppercase">
               Autres échéances ({otherLines.length})
             </p>
@@ -220,7 +220,7 @@ export function ForecastLineDialog({
               {otherLines.map((line) => (
                 <li
                   key={line.id}
-                  className="flex items-center justify-between gap-2 rounded-control border border-border-subtle/80 bg-elevated/60 px-2.5 py-1.5 text-control"
+                  className="flex items-center justify-between gap-2 rounded-control-sm border border-border-subtle/80 bg-elevated/60 px-2.5 py-1.5 text-control"
                 >
                   <span className="inline-flex items-center gap-1.5 text-fg-muted">
                     <Icon name="event" className="text-[14px]!" />

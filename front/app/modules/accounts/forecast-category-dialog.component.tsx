@@ -45,7 +45,7 @@ export function ForecastCategoryDialog({
   return (
     <Dialog isOpen={open} onClose={onClose} title={categoryName} icon="category" size={DIALOG_SIZE.default}>
       <div className="mt-3 flex flex-col gap-4">
-        <div className="flex items-center gap-3 rounded-panel border border-border-subtle bg-subtle/60 p-3">
+        <div className="flex items-center gap-3 rounded-control border border-border-subtle bg-subtle/60 p-3">
           <span
             className="flex size-11 shrink-0 items-center justify-center rounded-full text-white shadow-sm"
             style={{ backgroundColor: categoryColor }}

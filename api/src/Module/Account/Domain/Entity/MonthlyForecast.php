@@ -67,7 +67,7 @@ class MonthlyForecast
             throw new \InvalidArgumentException('Année hors plage.');
         }
 
-        return sprintf('%04d-%02d', $year, $month);
+        return \sprintf('%04d-%02d', $year, $month);
     }
 
     public function getId(): Uuid

@@ -35,9 +35,9 @@ final class MerchantController extends AbstractController
 
         try {
             $payload = [
-                'name' => JsonRequest::requireString($data, 'name'),
-                'color' => JsonRequest::requireString($data, 'color'),
-                'icon' => JsonRequest::requireString($data, 'icon'),
+                'name'     => JsonRequest::requireString($data, 'name'),
+                'color'    => JsonRequest::requireString($data, 'color'),
+                'icon'     => JsonRequest::requireString($data, 'icon'),
                 'position' => isset($data['position']) && \is_int($data['position']) ? $data['position'] : 0,
             ];
             if (\array_key_exists('categoryIds', $data)) {

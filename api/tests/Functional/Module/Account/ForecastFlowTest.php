@@ -40,29 +40,29 @@ final class ForecastFlowTest extends WebTestCase
     public function testCreateDuplicateAndStats(): void
     {
         $expense = $this->json('POST', '/api/categories', [
-            'name' => 'Courses',
-            'icon' => 'shopping_cart',
+            'name'  => 'Courses',
+            'icon'  => 'shopping_cart',
             'color' => '#16A34A',
-            'kind' => 'expense',
+            'kind'  => 'expense',
         ]);
         $income = $this->json('POST', '/api/categories', [
-            'name' => 'Salaire',
-            'icon' => 'payments',
+            'name'  => 'Salaire',
+            'icon'  => 'payments',
             'color' => '#2563EB',
-            'kind' => 'income',
+            'kind'  => 'income',
         ]);
 
         $account = $this->json('POST', '/api/accounts', ['name' => 'Perso']);
         $sub = $this->json('POST', '/api/accounts/'.$account['id'].'/sub-accounts', [
-            'name' => 'Courant',
-            'icon' => 'account_balance',
-            'color' => '#2563EB',
+            'name'                => 'Courant',
+            'icon'                => 'account_balance',
+            'color'               => '#2563EB',
             'openingBalanceCents' => 50_000,
         ]);
 
         $forecast = $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/forecasts', [
             'yearMonth' => '2026-01',
-            'lines' => [
+            'lines'     => [
                 ['categoryId' => $income['id'], 'plannedAmountCents' => 200_000],
                 ['categoryId' => $expense['id'], 'plannedAmountCents' => 25_000, 'scheduledDay' => 3],
                 ['categoryId' => $expense['id'], 'plannedAmountCents' => 15_000, 'scheduledDay' => 15],
@@ -84,12 +84,12 @@ final class ForecastFlowTest extends WebTestCase
         self::assertSame(15, $dup['lines'][2]['scheduledDay']);
 
         $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/transactions', [
-            'categoryId' => $expense['id'],
+            'categoryId'    => $expense['id'],
             'operationDate' => '2026-02-05',
             'effectiveDate' => '2026-02-05',
             'paymentMethod' => 'card',
-            'designation' => 'Courses',
-            'amountCents' => 15_000,
+            'designation'   => 'Courses',
+            'amountCents'   => 15_000,
         ]);
         self::assertResponseStatusCodeSame(201);
 
@@ -156,7 +156,7 @@ final class ForecastFlowTest extends WebTestCase
     private function authHeaders(): array
     {
         return [
-            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_ACCEPT'        => 'application/json',
             'HTTP_AUTHORIZATION' => 'Bearer '.$this->token,
         ];
     }

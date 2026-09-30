@@ -20,12 +20,8 @@ final class AmountFromCategory
         ?string $flow = null,
         bool $allowZero = false,
     ): int {
-        if ($absoluteCents < 0 || (!$allowZero && $absoluteCents === 0)) {
-            throw new InvalidTransactionException(
-                $allowZero
-                    ? 'Le montant doit être un entier positif ou nul.'
-                    : 'Le montant doit être un entier strictement positif.',
-            );
+        if ($absoluteCents < 0 || (!$allowZero && 0 === $absoluteCents)) {
+            throw new InvalidTransactionException($allowZero ? 'Le montant doit être un entier positif ou nul.' : 'Le montant doit être un entier strictement positif.');
         }
 
         if (0 === $absoluteCents) {
@@ -36,13 +32,11 @@ final class AmountFromCategory
 
         return match ($category->getKind()) {
             CategoryKind::Expense => -$absoluteCents,
-            CategoryKind::Income => $absoluteCents,
-            CategoryKind::Both => match ($flow) {
+            CategoryKind::Income  => $absoluteCents,
+            CategoryKind::Both    => match ($flow) {
                 'credit' => $absoluteCents,
-                'debit' => -$absoluteCents,
-                default => throw new InvalidTransactionException(
-                    'Pour une catégorie mixte, indiquez flow: "credit" ou "debit".',
-                ),
+                'debit'  => -$absoluteCents,
+                default  => throw new InvalidTransactionException('Pour une catégorie mixte, indiquez flow: "credit" ou "debit".'),
             },
         };
     }
@@ -52,13 +46,11 @@ final class AmountFromCategory
     {
         return match ($category->getKind()) {
             CategoryKind::Expense => true,
-            CategoryKind::Income => false,
-            CategoryKind::Both => match ($flow) {
-                'debit' => true,
+            CategoryKind::Income  => false,
+            CategoryKind::Both    => match ($flow) {
+                'debit'  => true,
                 'credit' => false,
-                default => throw new InvalidTransactionException(
-                    'Pour une catégorie mixte, indiquez flow: "credit" ou "debit".',
-                ),
+                default  => throw new InvalidTransactionException('Pour une catégorie mixte, indiquez flow: "credit" ou "debit".'),
             },
         };
     }
@@ -69,9 +61,7 @@ final class AmountFromCategory
             return;
         }
         if ('credit' !== $flow && 'debit' !== $flow) {
-            throw new InvalidTransactionException(
-                'Pour une catégorie mixte, indiquez flow: "credit" ou "debit".',
-            );
+            throw new InvalidTransactionException('Pour une catégorie mixte, indiquez flow: "credit" ou "debit".');
         }
     }
 }

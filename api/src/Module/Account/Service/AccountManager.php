@@ -221,12 +221,12 @@ final class AccountManager
     private function serializeAccount(Account $account, bool $withSubs): array
     {
         $payload = [
-            'id' => (string) $account->getId(),
-            'name' => $account->getName(),
-            'notes' => $account->getNotes(),
-            'position' => $account->getPosition(),
+            'id'         => (string) $account->getId(),
+            'name'       => $account->getName(),
+            'notes'      => $account->getNotes(),
+            'position'   => $account->getPosition(),
             'archivedAt' => $account->getArchivedAt()?->format(\DateTimeInterface::ATOM),
-            'createdAt' => $account->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'createdAt'  => $account->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ];
 
         if ($withSubs) {
@@ -246,17 +246,17 @@ final class AccountManager
     private function serializeSubAccount(SubAccount $sub): array
     {
         return [
-            'id' => (string) $sub->getId(),
-            'accountId' => (string) $sub->getAccount()->getId(),
-            'name' => $sub->getName(),
-            'icon' => $sub->getIcon(),
-            'color' => $sub->getColor(),
-            'openingBalanceCents' => $sub->getOpeningBalanceCents(),
-            'balanceCents' => $this->balances->currentBalanceCents($sub),
+            'id'                      => (string) $sub->getId(),
+            'accountId'               => (string) $sub->getAccount()->getId(),
+            'name'                    => $sub->getName(),
+            'icon'                    => $sub->getIcon(),
+            'color'                   => $sub->getColor(),
+            'openingBalanceCents'     => $sub->getOpeningBalanceCents(),
+            'balanceCents'            => $this->balances->currentBalanceCents($sub),
             'provisionalBalanceCents' => $this->balances->provisionalBalanceCents($sub),
-            'position' => $sub->getPosition(),
-            'archivedAt' => $sub->getArchivedAt()?->format(\DateTimeInterface::ATOM),
-            'createdAt' => $sub->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'position'                => $sub->getPosition(),
+            'archivedAt'              => $sub->getArchivedAt()?->format(\DateTimeInterface::ATOM),
+            'createdAt'               => $sub->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ];
     }
 }

@@ -31,8 +31,8 @@ final class AccountController extends AbstractController
     {
         $data = JsonRequest::body($request);
         $payload = $this->accounts->createAccount([
-            'name' => JsonRequest::requireString($data, 'name'),
-            'notes' => JsonRequest::optionalString($data, 'notes'),
+            'name'     => JsonRequest::requireString($data, 'name'),
+            'notes'    => JsonRequest::optionalString($data, 'notes'),
             'position' => isset($data['position']) && \is_int($data['position']) ? $data['position'] : 0,
         ]);
 
@@ -88,9 +88,9 @@ final class AccountController extends AbstractController
 
         try {
             $payload = $this->accounts->createSubAccount($accountId, [
-                'name' => JsonRequest::requireString($data, 'name'),
-                'icon' => JsonRequest::requireString($data, 'icon'),
-                'color' => JsonRequest::requireString($data, 'color'),
+                'name'                => JsonRequest::requireString($data, 'name'),
+                'icon'                => JsonRequest::requireString($data, 'icon'),
+                'color'               => JsonRequest::requireString($data, 'color'),
                 'openingBalanceCents' => isset($data['openingBalanceCents']) && \is_int($data['openingBalanceCents'])
                     ? $data['openingBalanceCents']
                     : 0,

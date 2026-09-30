@@ -263,16 +263,16 @@ final class MerchantManager
         }
 
         return [
-            'id' => $id,
-            'name' => $merchant->getName(),
-            'color' => $merchant->getColor(),
-            'icon' => $merchant->getIcon(),
-            'hasImage' => $hasImage,
-            'imageUrl' => $hasImage ? '/api/merchants/'.$id.'/image' : null,
-            'position' => $merchant->getPosition(),
+            'id'          => $id,
+            'name'        => $merchant->getName(),
+            'color'       => $merchant->getColor(),
+            'icon'        => $merchant->getIcon(),
+            'hasImage'    => $hasImage,
+            'imageUrl'    => $hasImage ? '/api/merchants/'.$id.'/image' : null,
+            'position'    => $merchant->getPosition(),
             'categoryIds' => $categoryIds,
-            'archivedAt' => $merchant->getArchivedAt()?->format(\DateTimeInterface::ATOM),
-            'createdAt' => $merchant->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'archivedAt'  => $merchant->getArchivedAt()?->format(\DateTimeInterface::ATOM),
+            'createdAt'   => $merchant->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ];
     }
 }

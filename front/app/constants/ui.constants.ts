@@ -213,7 +213,7 @@ export const APP_PINNED_DETAIL_CHROME_CLASSES =
 export const APP_PINNED_DETAIL_BODY_CLASSES = 'min-h-0 min-w-0 flex-1 overflow-y-auto px-3 pb-4 md:px-6 md:pb-6';
 
 export const LIST_CARD_SURFACE_CLASSES =
-  'flex items-stretch gap-2 overflow-hidden rounded-panel border-y border-r border-l-[3px] border-border-subtle bg-elevated transition-[border-color,background-color] duration-(--duration-fast) hover:border-border-strong md:gap-3';
+  'flex items-stretch gap-2 overflow-hidden rounded-control border-y border-r border-l-[3px] border-border-subtle bg-elevated transition-[border-color,background-color] duration-(--duration-fast) hover:border-border-strong md:gap-3';
 
 export const LIST_CARD_IDENTITY_CLASSES =
   'relative z-0 flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5 md:gap-3 md:px-4 md:py-3';

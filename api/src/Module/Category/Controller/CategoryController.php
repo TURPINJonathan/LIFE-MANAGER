@@ -34,10 +34,10 @@ final class CategoryController extends AbstractController
 
         try {
             $payload = [
-                'name' => JsonRequest::requireString($data, 'name'),
-                'icon' => JsonRequest::requireString($data, 'icon'),
-                'color' => JsonRequest::requireString($data, 'color'),
-                'kind' => JsonRequest::requireString($data, 'kind'),
+                'name'     => JsonRequest::requireString($data, 'name'),
+                'icon'     => JsonRequest::requireString($data, 'icon'),
+                'color'    => JsonRequest::requireString($data, 'color'),
+                'kind'     => JsonRequest::requireString($data, 'kind'),
                 'position' => isset($data['position']) && \is_int($data['position']) ? $data['position'] : 0,
             ];
             if (\array_key_exists('merchantIds', $data)) {

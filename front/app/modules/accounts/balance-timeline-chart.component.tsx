@@ -241,9 +241,7 @@ export function BalanceTimelineChart({
     <div
       className={cn(
         'relative flex h-full flex-col overflow-hidden text-fg-primary',
-        compact
-          ? 'min-h-52 rounded-control'
-          : 'min-h-64 rounded-panel bg-elevated',
+        compact ? 'min-h-52 rounded-control' : 'min-h-64 rounded-panel bg-elevated',
         className,
       )}
     >
@@ -451,7 +449,7 @@ export function BalanceTimelineChart({
               compact && 'right-0 bottom-0 left-0 sm:left-0',
             )}
           >
-            <div className="rounded-2xl border border-border-subtle bg-card/90 px-3.5 py-2.5 shadow-lg backdrop-blur-xl dark:border-border dark:bg-elevated/90">
+            <div className="rounded-control border border-border-subtle bg-card/90 px-3.5 py-2.5 shadow-lg backdrop-blur-xl dark:border-border dark:bg-elevated/90">
               <p className="text-[11px] font-medium tracking-wide text-fg-muted uppercase">
                 {formatPointLabel(active)}
                 {active.day === daysElapsed && active.day > 0 ? ' · aujourd’hui' : ''}

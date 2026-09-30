@@ -218,18 +218,18 @@ final class CategoryManager
         }
 
         return [
-            'id' => (string) $category->getId(),
-            'name' => $category->getName(),
-            'icon' => $category->getIcon(),
-            'color' => $category->getColor(),
-            'kind' => $category->getKind()->value,
-            'position' => $category->getPosition(),
-            'merchantIds' => $merchantIds,
+            'id'                 => (string) $category->getId(),
+            'name'               => $category->getName(),
+            'icon'               => $category->getIcon(),
+            'color'              => $category->getColor(),
+            'kind'               => $category->getKind()->value,
+            'position'           => $category->getPosition(),
+            'merchantIds'        => $merchantIds,
             'favoriteMerchantId' => $category->getFavoriteMerchant() && !$category->getFavoriteMerchant()->isArchived()
                 ? (string) $category->getFavoriteMerchant()->getId()
                 : null,
             'archivedAt' => $category->getArchivedAt()?->format(\DateTimeInterface::ATOM),
-            'createdAt' => $category->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'createdAt'  => $category->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ];
     }
 }

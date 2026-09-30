@@ -138,18 +138,18 @@ final class LocalUploadStorage
         $logical = $this->isGzipPath($relativePath)
             ? substr($relativePath, 0, -3)
             : $relativePath;
-        $ext = strtolower(pathinfo($logical, PATHINFO_EXTENSION));
+        $ext = strtolower(pathinfo($logical, \PATHINFO_EXTENSION));
 
         return match ($ext) {
             'jpg', 'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            'webp' => 'image/webp',
-            'gif' => 'image/gif',
-            'bmp' => 'image/bmp',
-            'heic' => 'image/heic',
-            'heif' => 'image/heif',
-            'pdf' => 'application/pdf',
-            default => 'application/octet-stream',
+            'png'         => 'image/png',
+            'webp'        => 'image/webp',
+            'gif'         => 'image/gif',
+            'bmp'         => 'image/bmp',
+            'heic'        => 'image/heic',
+            'heif'        => 'image/heif',
+            'pdf'         => 'application/pdf',
+            default       => 'application/octet-stream',
         };
     }
 
@@ -184,7 +184,7 @@ final class LocalUploadStorage
     {
         $mime = $this->detectMime($file);
         if (!\in_array($mime, $allowed, true)) {
-            throw new \InvalidArgumentException(sprintf('Type de fichier non autorisé. Attendu : %s.', $label));
+            throw new \InvalidArgumentException(\sprintf('Type de fichier non autorisé. Attendu : %s.', $label));
         }
     }
 
@@ -207,15 +207,15 @@ final class LocalUploadStorage
     private function extensionFor(UploadedFile $file): string
     {
         return match ($this->detectMime($file)) {
-            'image/jpeg' => 'jpg',
-            'image/png' => 'png',
-            'image/webp' => 'webp',
-            'image/gif' => 'gif',
-            'image/bmp' => 'bmp',
-            'image/heic' => 'heic',
-            'image/heif' => 'heif',
+            'image/jpeg'      => 'jpg',
+            'image/png'       => 'png',
+            'image/webp'      => 'webp',
+            'image/gif'       => 'gif',
+            'image/bmp'       => 'bmp',
+            'image/heic'      => 'heic',
+            'image/heif'      => 'heif',
             'application/pdf' => 'pdf',
-            default => pathinfo($file->getClientOriginalName(), PATHINFO_EXTENSION) ?: 'bin',
+            default           => pathinfo($file->getClientOriginalName(), \PATHINFO_EXTENSION) ?: 'bin',
         };
     }
 }

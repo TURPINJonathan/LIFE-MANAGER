@@ -53,7 +53,7 @@ final class ForecastManager
         $ym = MonthlyForecast::normalizeYearMonth($data['yearMonth']);
 
         if (null !== $this->forecasts->findForSubAccountMonth($sub, $ym)) {
-            throw new InvalidForecastException(sprintf('Un budget existe déjà pour %s.', $ym));
+            throw new InvalidForecastException(\sprintf('Un budget existe déjà pour %s.', $ym));
         }
 
         $forecast = new MonthlyForecast($sub, $ym);
@@ -79,12 +79,12 @@ final class ForecastManager
             : $this->previousYearMonth($target);
 
         if (null !== $this->forecasts->findForSubAccountMonth($sub, $target)) {
-            throw new InvalidForecastException(sprintf('Un budget existe déjà pour %s.', $target));
+            throw new InvalidForecastException(\sprintf('Un budget existe déjà pour %s.', $target));
         }
 
         $sourceForecast = $this->forecasts->findForSubAccountMonth($sub, $source);
         if (null === $sourceForecast) {
-            throw new ForecastNotFoundException(sprintf('Aucun budget source pour %s.', $source));
+            throw new ForecastNotFoundException(\sprintf('Aucun budget source pour %s.', $source));
         }
 
         $forecast = new MonthlyForecast($sub, $target);
@@ -165,10 +165,10 @@ final class ForecastManager
         }
 
         return [
-            'yearMonth' => $ym,
+            'yearMonth'         => $ym,
             'previousYearMonth' => $prevYm,
-            'current' => $current,
-            'previous' => $previous,
+            'current'           => $current,
+            'previous'          => $previous,
         ];
     }
 
@@ -266,22 +266,22 @@ final class ForecastManager
                 $overBudget = $isExpense && $lineActualAbs > $plannedAbs;
 
                 $categoryRows[] = [
-                    'lineId' => (string) $line->getId(),
-                    'categoryId' => $catId,
-                    'categoryName' => $cat->getName(),
-                    'categoryIcon' => $cat->getIcon(),
-                    'categoryColor' => $cat->getColor(),
-                    'categoryKind' => $cat->getKind()->value,
-                    'flow' => $line->getFlow(),
-                    'scheduledDay' => $line->getScheduledDay(),
+                    'lineId'             => (string) $line->getId(),
+                    'categoryId'         => $catId,
+                    'categoryName'       => $cat->getName(),
+                    'categoryIcon'       => $cat->getIcon(),
+                    'categoryColor'      => $cat->getColor(),
+                    'categoryKind'       => $cat->getKind()->value,
+                    'flow'               => $line->getFlow(),
+                    'scheduledDay'       => $line->getScheduledDay(),
                     'plannedAmountCents' => $plannedAbs,
                     'plannedSignedCents' => $signedPlanned,
-                    'actualSignedCents' => $lineActualSigned,
-                    'actualAmountCents' => $lineActualAbs,
-                    'remainingCents' => $remaining,
+                    'actualSignedCents'  => $lineActualSigned,
+                    'actualAmountCents'  => $lineActualAbs,
+                    'remainingCents'     => $remaining,
                     'consumptionPercent' => $consumptionPercent,
-                    'overBudget' => $overBudget,
-                    'isExpense' => $isExpense,
+                    'overBudget'         => $overBudget,
+                    'isExpense'          => $isExpense,
                 ];
             }
         }
@@ -306,10 +306,10 @@ final class ForecastManager
                 }
             }
             $unbudgeted[] = [
-                'categoryId' => $catId,
-                'categoryName' => $txCat?->getName(),
-                'categoryIcon' => $txCat?->getIcon(),
-                'categoryColor' => $txCat?->getColor(),
+                'categoryId'        => $catId,
+                'categoryName'      => $txCat?->getName(),
+                'categoryIcon'      => $txCat?->getIcon(),
+                'categoryColor'     => $txCat?->getColor(),
                 'actualSignedCents' => $signed,
                 'actualAmountCents' => abs($signed),
             ];
@@ -335,8 +335,8 @@ final class ForecastManager
         $isFutureMonth = $today < $from;
         $daysElapsed = match (true) {
             $isFutureMonth => 0,
-            $isPastMonth => $daysInMonth,
-            default => (int) $today->format('j'),
+            $isPastMonth   => $daysInMonth,
+            default        => (int) $today->format('j'),
         };
         $daysRemaining = max(0, $daysInMonth - $daysElapsed);
 
@@ -353,46 +353,46 @@ final class ForecastManager
         $previousMonth = $this->buildPreviousMonthSnapshot($sub, $ym, $categoryRows);
 
         return [
-            'yearMonth' => $ym,
+            'yearMonth'   => $ym,
             'hasForecast' => null !== $forecast,
-            'forecastId' => null !== $forecast ? (string) $forecast->getId() : null,
-            'balances' => [
-                'openingCents' => $openingBalanceCents,
-                'currentCents' => $currentBalanceCents,
-                'endOfMonthActualCents' => $endOfMonthActualCents,
-                'projectedBudgetCents' => $projectedBudgetCents,
-                'projectedRealisticCents' => $projectedRealisticCents,
+            'forecastId'  => null !== $forecast ? (string) $forecast->getId() : null,
+            'balances'    => [
+                'openingCents'                   => $openingBalanceCents,
+                'currentCents'                   => $currentBalanceCents,
+                'endOfMonthActualCents'          => $endOfMonthActualCents,
+                'projectedBudgetCents'           => $projectedBudgetCents,
+                'projectedRealisticCents'        => $projectedRealisticCents,
                 'varianceBudgetVsActualNetCents' => $plannedNetCents - $actualNetCents,
             ],
             'totals' => [
-                'plannedIncomeCents' => $plannedIncomeCents,
+                'plannedIncomeCents'  => $plannedIncomeCents,
                 'plannedExpenseCents' => $plannedExpenseCents,
-                'plannedNetCents' => $plannedNetCents,
-                'actualIncomeCents' => $actualIncomeCents,
-                'actualExpenseCents' => $actualExpenseCents,
-                'actualNetCents' => $actualNetCents,
+                'plannedNetCents'     => $plannedNetCents,
+                'actualIncomeCents'   => $actualIncomeCents,
+                'actualExpenseCents'  => $actualExpenseCents,
+                'actualNetCents'      => $actualNetCents,
             ],
             'categories' => $categoryRows,
             'unbudgeted' => [
-                'incomeCents' => $unbudgetedIncomeCents,
+                'incomeCents'  => $unbudgetedIncomeCents,
                 'expenseCents' => $unbudgetedExpenseCents,
-                'items' => $unbudgeted,
+                'items'        => $unbudgeted,
             ],
             'previousMonth' => $previousMonth,
-            'timeline' => $timeline,
-            'meta' => [
-                'daysInMonth' => $daysInMonth,
-                'daysElapsed' => $daysElapsed,
-                'daysRemaining' => $daysRemaining,
+            'timeline'      => $timeline,
+            'meta'          => [
+                'daysInMonth'    => $daysInMonth,
+                'daysElapsed'    => $daysElapsed,
+                'daysRemaining'  => $daysRemaining,
                 'isCurrentMonth' => $isCurrentMonth,
-                'isPastMonth' => $isPastMonth,
-                'isFutureMonth' => $isFutureMonth,
+                'isPastMonth'    => $isPastMonth,
+                'isFutureMonth'  => $isFutureMonth,
             ],
         ];
     }
 
     /**
-     * @param list<\App\Module\Account\Domain\Entity\Transaction> $monthTx
+     * @param list<Transaction>          $monthTx
      * @param list<array<string, mixed>> $categoryRows
      *
      * @return list<array<string, mixed>>
@@ -416,11 +416,11 @@ final class ForecastManager
             $actualByDay[$day] = ($actualByDay[$day] ?? 0) + $tx->getAmountCents();
             $cat = $tx->getCategory();
             $actualEventsByDay[$day][] = [
-                'kind' => 'actual',
-                'label' => $tx->getDesignation(),
-                'categoryName' => $cat->getName(),
+                'kind'          => 'actual',
+                'label'         => $tx->getDesignation(),
+                'categoryName'  => $cat->getName(),
                 'categoryColor' => $cat->getColor(),
-                'amountCents' => $tx->getAmountCents(),
+                'amountCents'   => $tx->getAmountCents(),
             ];
         }
 
@@ -435,11 +435,11 @@ final class ForecastManager
                 $signed = AmountFromCategory::signedCents($cat, $line->getPlannedAmountCents(), $line->getFlow(), true);
                 $day = $line->getScheduledDay();
                 $event = [
-                    'kind' => 'planned',
-                    'label' => $cat->getName(),
-                    'categoryName' => $cat->getName(),
+                    'kind'          => 'planned',
+                    'label'         => $cat->getName(),
+                    'categoryName'  => $cat->getName(),
                     'categoryColor' => $cat->getColor(),
-                    'amountCents' => $signed,
+                    'amountCents'   => $signed,
                 ];
                 if (null === $day) {
                     $unscheduledPlanned += $signed;
@@ -486,16 +486,16 @@ final class ForecastManager
 
         // Point 0 = solde d’ouverture (avant tout mouvement du mois).
         $points[] = [
-            'day' => 0,
-            'date' => $yearMonth.'-01',
-            'budgetBalanceCents' => $openingBalanceCents,
+            'day'                   => 0,
+            'date'                  => $yearMonth.'-01',
+            'budgetBalanceCents'    => $openingBalanceCents,
             'realisticBalanceCents' => $openingBalanceCents,
-            'actualBalanceCents' => $daysElapsed >= 0 ? $openingBalanceCents : null,
-            'events' => [],
+            'actualBalanceCents'    => $daysElapsed >= 0 ? $openingBalanceCents : null,
+            'events'                => [],
         ];
 
         for ($day = 1; $day <= $daysInMonth; ++$day) {
-            $date = sprintf('%s-%02d', $yearMonth, $day);
+            $date = \sprintf('%s-%02d', $yearMonth, $day);
             $budgetBalance += $plannedByDay[$day] ?? 0;
             $dayActual = $actualByDay[$day] ?? 0;
             if ($day <= $daysElapsed) {
@@ -511,12 +511,12 @@ final class ForecastManager
 
             $events = array_merge($plannedEventsByDay[$day] ?? [], $actualEventsByDay[$day] ?? []);
             $points[] = [
-                'day' => $day,
-                'date' => $date,
-                'budgetBalanceCents' => $budgetBalance,
+                'day'                   => $day,
+                'date'                  => $date,
+                'budgetBalanceCents'    => $budgetBalance,
                 'realisticBalanceCents' => $realisticBalance,
-                'actualBalanceCents' => $day <= $daysElapsed ? $actualBalance : null,
-                'events' => $events,
+                'actualBalanceCents'    => $day <= $daysElapsed ? $actualBalance : null,
+                'events'                => $events,
             ];
         }
 
@@ -541,7 +541,7 @@ final class ForecastManager
         $position = 0;
         foreach ($lines as $index => $row) {
             if (!\is_array($row) || !isset($row['categoryId'], $row['plannedAmountCents'])) {
-                throw new InvalidForecastException(sprintf('Ligne %d invalide.', $index));
+                throw new InvalidForecastException(\sprintf('Ligne %d invalide.', $index));
             }
             $categoryId = (string) $row['categoryId'];
             $category = $this->categories->requireOwnedEntity($categoryId);
@@ -562,11 +562,11 @@ final class ForecastManager
             return null;
         }
         if (!\is_int($raw) && !(is_numeric($raw) && (string) (int) $raw === (string) $raw)) {
-            throw new InvalidForecastException(sprintf('Ligne %d : scheduledDay doit être un entier ou null.', $lineIndex));
+            throw new InvalidForecastException(\sprintf('Ligne %d : scheduledDay doit être un entier ou null.', $lineIndex));
         }
         $day = (int) $raw;
         if ($day < 1 || $day > 31) {
-            throw new InvalidForecastException(sprintf('Ligne %d : le jour doit être entre 1 et 31.', $lineIndex));
+            throw new InvalidForecastException(\sprintf('Ligne %d : le jour doit être entre 1 et 31.', $lineIndex));
         }
 
         return $day;
@@ -619,11 +619,11 @@ final class ForecastManager
             $key = (string) $category->getId().':'.($flow ?? '');
             if (!isset($byKey[$key])) {
                 $byKey[$key] = [
-                    'category' => $category,
-                    'flow' => $flow,
-                    'isExpense' => AmountFromCategory::isExpense($category, $flow),
-                    'actualSigned' => 0,
-                    'plannedAbs' => 0,
+                    'category'      => $category,
+                    'flow'          => $flow,
+                    'isExpense'     => AmountFromCategory::isExpense($category, $flow),
+                    'actualSigned'  => 0,
+                    'plannedAbs'    => 0,
                     'plannedSigned' => 0,
                 ];
             }
@@ -641,11 +641,11 @@ final class ForecastManager
                 $signed = AmountFromCategory::signedCents($category, $line->getPlannedAmountCents(), $flow, true);
                 if (!isset($byKey[$key])) {
                     $byKey[$key] = [
-                        'category' => $category,
-                        'flow' => $flow,
-                        'isExpense' => AmountFromCategory::isExpense($category, $flow),
-                        'actualSigned' => 0,
-                        'plannedAbs' => 0,
+                        'category'      => $category,
+                        'flow'          => $flow,
+                        'isExpense'     => AmountFromCategory::isExpense($category, $flow),
+                        'actualSigned'  => 0,
+                        'plannedAbs'    => 0,
                         'plannedSigned' => 0,
                     ];
                 }
@@ -675,15 +675,15 @@ final class ForecastManager
 
         foreach ($byKey as $key => $info) {
             $payload = [
-                'categoryId' => (string) $info['category']->getId(),
-                'categoryName' => $info['category']->getName(),
-                'categoryIcon' => $info['category']->getIcon(),
-                'categoryColor' => $info['category']->getColor(),
-                'categoryKind' => $info['category']->getKind()->value,
-                'flow' => $info['flow'],
-                'isExpense' => $info['isExpense'],
-                'previousActualSignedCents' => $info['actualSigned'],
-                'previousActualAmountCents' => abs($info['actualSigned']),
+                'categoryId'                 => (string) $info['category']->getId(),
+                'categoryName'               => $info['category']->getName(),
+                'categoryIcon'               => $info['category']->getIcon(),
+                'categoryColor'              => $info['category']->getColor(),
+                'categoryKind'               => $info['category']->getKind()->value,
+                'flow'                       => $info['flow'],
+                'isExpense'                  => $info['isExpense'],
+                'previousActualSignedCents'  => $info['actualSigned'],
+                'previousActualAmountCents'  => abs($info['actualSigned']),
                 'previousPlannedAmountCents' => $info['plannedAbs'],
                 'previousPlannedSignedCents' => $info['plannedSigned'],
             ];
@@ -715,15 +715,15 @@ final class ForecastManager
             }
             $flow = $meta['flow'] ?? null;
             $categories[] = [
-                'categoryId' => (string) $meta['categoryId'],
-                'categoryName' => (string) $meta['categoryName'],
-                'categoryIcon' => (string) $meta['categoryIcon'],
-                'categoryColor' => (string) $meta['categoryColor'],
-                'categoryKind' => (string) $meta['categoryKind'],
-                'flow' => \is_string($flow) ? $flow : null,
-                'isExpense' => (bool) ($meta['isExpense'] ?? false),
-                'previousActualSignedCents' => 0,
-                'previousActualAmountCents' => 0,
+                'categoryId'                 => (string) $meta['categoryId'],
+                'categoryName'               => (string) $meta['categoryName'],
+                'categoryIcon'               => (string) $meta['categoryIcon'],
+                'categoryColor'              => (string) $meta['categoryColor'],
+                'categoryKind'               => (string) $meta['categoryKind'],
+                'flow'                       => \is_string($flow) ? $flow : null,
+                'isExpense'                  => (bool) ($meta['isExpense'] ?? false),
+                'previousActualSignedCents'  => 0,
+                'previousActualAmountCents'  => 0,
                 'previousPlannedAmountCents' => 0,
                 'previousPlannedSignedCents' => 0,
             ];
@@ -733,16 +733,16 @@ final class ForecastManager
         usort($orphans, static fn (array $a, array $b): int => strcmp($a['categoryName'], $b['categoryName']));
 
         return [
-            'yearMonth' => $prevYm,
+            'yearMonth'   => $prevYm,
             'hasForecast' => null !== $prevForecast,
-            'totals' => [
-                'plannedIncomeCents' => $plannedIncomeCents,
+            'totals'      => [
+                'plannedIncomeCents'  => $plannedIncomeCents,
                 'plannedExpenseCents' => $plannedExpenseCents,
-                'actualIncomeCents' => $actualIncomeCents,
-                'actualExpenseCents' => $actualExpenseCents,
+                'actualIncomeCents'   => $actualIncomeCents,
+                'actualExpenseCents'  => $actualExpenseCents,
             ],
             'categories' => $categories,
-            'orphans' => $orphans,
+            'orphans'    => $orphans,
         ];
     }
 
@@ -789,8 +789,8 @@ final class ForecastManager
             if (!isset($needed[$key])) {
                 $needed[$key] = [
                     'category' => $category,
-                    'flow' => $flow,
-                    'day' => (int) $tx->getOperationDate()->format('j'),
+                    'flow'     => $flow,
+                    'day'      => (int) $tx->getOperationDate()->format('j'),
                 ];
             }
         }
@@ -872,9 +872,9 @@ final class ForecastManager
         $this->forecasts->save($forecast);
 
         return [
-            'added' => true,
+            'added'        => true,
             'categoryName' => $category->getName(),
-            'yearMonth' => $yearMonth,
+            'yearMonth'    => $yearMonth,
         ];
     }
 
@@ -887,26 +887,26 @@ final class ForecastManager
         foreach ($forecast->getLines() as $line) {
             $cat = $line->getCategory();
             $lines[] = [
-                'id' => (string) $line->getId(),
-                'categoryId' => (string) $cat->getId(),
-                'categoryName' => $cat->getName(),
-                'categoryIcon' => $cat->getIcon(),
-                'categoryColor' => $cat->getColor(),
-                'categoryKind' => $cat->getKind()->value,
+                'id'                 => (string) $line->getId(),
+                'categoryId'         => (string) $cat->getId(),
+                'categoryName'       => $cat->getName(),
+                'categoryIcon'       => $cat->getIcon(),
+                'categoryColor'      => $cat->getColor(),
+                'categoryKind'       => $cat->getKind()->value,
                 'plannedAmountCents' => $line->getPlannedAmountCents(),
-                'flow' => $line->getFlow(),
-                'scheduledDay' => $line->getScheduledDay(),
-                'position' => $line->getPosition(),
+                'flow'               => $line->getFlow(),
+                'scheduledDay'       => $line->getScheduledDay(),
+                'position'           => $line->getPosition(),
             ];
         }
 
         return [
-            'id' => (string) $forecast->getId(),
+            'id'           => (string) $forecast->getId(),
             'subAccountId' => (string) $forecast->getSubAccount()->getId(),
-            'yearMonth' => $forecast->getYearMonth(),
-            'lines' => $lines,
-            'createdAt' => $forecast->getCreatedAt()->format(\DateTimeInterface::ATOM),
-            'updatedAt' => $forecast->getUpdatedAt()->format(\DateTimeInterface::ATOM),
+            'yearMonth'    => $forecast->getYearMonth(),
+            'lines'        => $lines,
+            'createdAt'    => $forecast->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'updatedAt'    => $forecast->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ];
     }
 }

@@ -42,14 +42,14 @@ final class Version20260928180000 extends AbstractMigration
 
             for ($i = 1, $count = \count($normalized); $i < $count; ++$i) {
                 $this->connection->insert('forecast_line', [
-                    'id' => (string) Uuid::v7(),
-                    'forecast_id' => $row['forecast_id'],
-                    'category_id' => $row['category_id'],
+                    'id'                   => (string) Uuid::v7(),
+                    'forecast_id'          => $row['forecast_id'],
+                    'category_id'          => $row['category_id'],
                     'planned_amount_cents' => $row['planned_amount_cents'],
-                    'flow' => $row['flow'],
-                    'position' => ((int) $row['position']) + $i,
-                    'scheduled_day' => $normalized[$i],
-                    'scheduled_days' => '[]',
+                    'flow'                 => $row['flow'],
+                    'position'             => ((int) $row['position']) + $i,
+                    'scheduled_day'        => $normalized[$i],
+                    'scheduled_days'       => '[]',
                 ]);
             }
         }

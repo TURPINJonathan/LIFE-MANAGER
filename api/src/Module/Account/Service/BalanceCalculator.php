@@ -39,7 +39,7 @@ final class BalanceCalculator
         foreach ($this->transactions->listForSubAccount($subAccount) as $transaction) {
             $balance += $transaction->getAmountCents();
             $rows[] = [
-                'transaction' => $transaction,
+                'transaction'       => $transaction,
                 'balanceAfterCents' => $balance,
             ];
         }
