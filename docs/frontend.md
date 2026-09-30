@@ -24,7 +24,7 @@ Les utilities de marque (`bg-accent`, `text-brand`, …) sont les mêmes partout
 ## Comptes, catégories & enseignes
 
 - **`/comptes`** : dashboard en grille 4 colonnes alignées (solde 1 + comptes comptes 1 chacun ; dessous 2+1+1 : graphique, **Échéances**, **Répartition**). Stats via `fetchForecastStatsDashboard` ; le graphique peut masquer/afficher M−1 sans recharger.
-- **`/comptes/:subAccountId`** : chrome détail épinglé ; toggle compact Opérations / Budget ; budget synchronisé sur `?vue=budget&mois=YYYY-MM` ; actions budget (Modifier / Supprimer) et création opération en haut à droite ; switcher.
+- **`/comptes/:subAccountId`** : chrome détail épinglé ; toggle compact Opérations / Budget ; budget synchronisé sur `?vue=budget&mois=YYYY-MM` ; actions budget (Modifier / Supprimer) et création opération en haut à droite ; switcher. **Opérations** : `thead` sticky, pagination API (`limit`/`offset`, pages de 50) et chargement de la suite au scroll.
 - **Budget** : vue stats toujours visible ; **+** sur Revenus/Dépenses ouvre un dialog (catégorie, montant TPE, jour) ; clic sur une carte → échéances ; duplication M−1 en en-tête ; vue tableur (dialog) pour édition groupée ; suppression du budget dans le chrome du ledger.
 - **Paramètres** : `/parametres` → profil / comptes / catégories / **enseignes** ; rail sections (desktop) + pills (mobile) ; contenu en `SectionCard` ; archivage via `ConfirmDialog`.
 - **Opération** : catégorie (création à la volée) ; **enseigne optionnelle** (auto-favori de la catégorie si défini ; select : liées A–Z puis autres A–Z) ; **pièce jointe optionnelle** (caméra ou fichier PDF/image) ; si la catégorie n’est pas dans le budget du mois (date d’opération), une ligne forecast est ajoutée automatiquement. **Montant** : saisie type TPE (`TpeAmountInput`) — chiffres uniquement, virgule implicite (ex. `1` `2` `5` → `1,25 €`), aussi dans l’éditeur de budget.
@@ -55,6 +55,19 @@ Modifier une teinte = éditer uniquement le bloc CSS correspondant. Changer la p
 - Pas de hex / classes Tailwind couleur-nommées (`bg-orange-500`) pour la marque dans les composants.
 - Le plus long préfixe gagne (`/comptes/nouveau` → `accounts`).
 - `/` ne match que l’accueil exact (pas toutes les routes).
+
+## Rayons
+
+Tokens (`app.css`) : `--radius-panel` → `rounded-panel` (cartes / panneaux), `--radius-control` → `rounded-control` (surfaces inset, champs, lignes), `--radius-control-sm` → `rounded-control-sm` (insets denses). Pas de rayons Tailwind bruts (`rounded-2xl`, `rounded-xl`, …) sur les cartes.
+
+Règle d’imbrication : `r_inner = max(0, R_outer − padding)`.
+
+Paires canoniques :
+
+- Carte `rounded-panel` + `p-3` (12px) → enfants bordés en `rounded-control` (12px)
+- Carte `rounded-panel` + `p-4` (16px) → enfants bordés en `rounded-control-sm` (8px)
+- Wrapper `rounded-control` + `p-2` (8px) → enfants en `rounded-control-sm` (ou sans rayon)
+- Ne jamais imbriquer `rounded-panel` dans un autre `rounded-panel` / dialog — utiliser `rounded-control` pour les blocs internes
 
 ## Layout
 

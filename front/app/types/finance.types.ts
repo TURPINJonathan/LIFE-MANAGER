@@ -79,6 +79,8 @@ export type LedgerPayload = {
   subAccount: SubAccount;
   openingBalanceCents: number;
   transactions: LedgerTransaction[];
+  hasMore: boolean;
+  nextOffset: number | null;
 };
 
 export type ForecastLine = {

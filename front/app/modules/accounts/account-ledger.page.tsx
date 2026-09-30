@@ -70,6 +70,7 @@ import { buildMerchantSelectOptions, favoriteMerchantIdForCategory } from './mer
 import { SubAccountSwitcher } from './sub-account-switcher.component';
 
 const ATTACHMENT_ACCEPT = 'image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.webp';
+const LEDGER_PAGE_SIZE = 50;
 
 type TxForm = {
   categoryId: string;
@@ -101,6 +102,7 @@ export function AccountLedgerPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [editing, setEditing] = useState<LedgerTransaction | null>(null);
   const [creating, setCreating] = useState(false);
   const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
@@ -109,6 +111,8 @@ export function AccountLedgerPage() {
   const [removeAttachment, setRemoveAttachment] = useState(false);
   const [attachmentDragging, setAttachmentDragging] = useState(false);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
+  const loadingMoreRef = useRef(false);
   const [pendingDelete, setPendingDelete] = useState<LedgerTransaction | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [budgetActions, setBudgetActions] = useState<ForecastChromeActions | null>(null);
@@ -156,7 +160,7 @@ export function AccountLedgerPage() {
     setLoading(true);
     try {
       const [ledgerPayload, cats, merchantRows, accountRows] = await Promise.all([
-        fetchLedger(token, subAccountId),
+        fetchLedger(token, subAccountId, { limit: LEDGER_PAGE_SIZE, offset: 0 }),
         listCategories(token),
         listMerchants(token),
         listAccounts(token),
@@ -172,10 +176,54 @@ export function AccountLedgerPage() {
     }
   };
 
+  const loadMore = async () => {
+    if (!token || !subAccountId || !ledger?.hasMore || ledger.nextOffset === null) return;
+    if (loadingMoreRef.current) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const page = await fetchLedger(token, subAccountId, {
+        limit: LEDGER_PAGE_SIZE,
+        offset: ledger.nextOffset,
+      });
+      setLedger((prev) => {
+        if (!prev) return page;
+        return {
+          ...page,
+          subAccount: page.subAccount,
+          openingBalanceCents: page.openingBalanceCents,
+          transactions: [...prev.transactions, ...page.transactions],
+        };
+      });
+    } catch (err) {
+      toastFromError(err, 'Chargement impossible.');
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  };
+
   useEffect(() => {
     void reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, subAccountId]);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel || view !== 'operations' || !ledger?.hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void loadMore();
+        }
+      },
+      { root: sentinel.closest('[data-app-scroll]'), rootMargin: '120px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, ledger?.hasMore, ledger?.nextOffset, ledger?.transactions.length]);
 
   const openCreate = () => {
     const nextCategoryId = defaultCategoryId(categories);
@@ -412,8 +460,9 @@ export function AccountLedgerPage() {
   };
 
   const dialogOpen = creating || editing !== null;
-  const reversed = ledger ? [...ledger.transactions].reverse() : [];
+  const transactions = ledger?.transactions ?? [];
   const showExistingAttachment = Boolean(editing?.hasAttachment && !removeAttachment && !attachmentFile);
+  const operationsTableActive = view === 'operations' && !loading && Boolean(ledger) && transactions.length > 0;
 
   return (
     <div className={APP_PAGE_FILL_CLASSES}>
@@ -470,7 +519,11 @@ export function AccountLedgerPage() {
                   aria-label="Mois précédent"
                   onClick={budgetActions.onPrevMonth}
                 />
-                <Typography variant="body" weight="semibold" className="min-w-[8.5rem] text-center tabular-nums sm:min-w-[10rem]">
+                <Typography
+                  variant="body"
+                  weight="semibold"
+                  className="min-w-[8.5rem] text-center tabular-nums sm:min-w-[10rem]"
+                >
                   {budgetActions.monthLabel}
                 </Typography>
                 <IconButton
@@ -496,9 +549,7 @@ export function AccountLedgerPage() {
                     onClick={() => setView('operations')}
                     className={cn(
                       'inline-flex h-9 cursor-pointer items-center gap-1 rounded-control px-2 text-control font-medium transition-colors',
-                      view === 'operations'
-                        ? 'bg-elevated text-fg-primary'
-                        : 'text-fg-muted hover:text-fg-primary',
+                      view === 'operations' ? 'bg-elevated text-fg-primary' : 'text-fg-muted hover:text-fg-primary',
                     )}
                   >
                     <Icon name="receipt_long" className="text-icon-sm" />
@@ -509,9 +560,7 @@ export function AccountLedgerPage() {
                     onClick={() => setView('budget')}
                     className={cn(
                       'inline-flex h-9 cursor-pointer items-center gap-1 rounded-control px-2 text-control font-medium transition-colors',
-                      view === 'budget'
-                        ? 'bg-elevated text-fg-primary'
-                        : 'text-fg-muted hover:text-fg-primary',
+                      view === 'budget' ? 'bg-elevated text-fg-primary' : 'text-fg-muted hover:text-fg-primary',
                     )}
                   >
                     <Icon name="calendar_month" className="text-icon-sm" />
@@ -565,7 +614,10 @@ export function AccountLedgerPage() {
         {accounts.length > 0 && <SubAccountSwitcher accounts={accounts} activeId={subAccountId} />}
       </div>
 
-      <div className={APP_PINNED_DETAIL_BODY_CLASSES} data-app-scroll>
+      <div
+        className={cn(APP_PINNED_DETAIL_BODY_CLASSES, operationsTableActive && 'flex flex-col overflow-hidden')}
+        {...(!operationsTableActive ? { 'data-app-scroll': true } : {})}
+      >
         {loading || !ledger ? null : view === 'budget' ? (
           <ForecastPanel
             subAccountId={subAccountId}
@@ -577,194 +629,226 @@ export function AccountLedgerPage() {
               setCategories((prev) => [...prev, category].sort((a, b) => a.name.localeCompare(b.name, 'fr')));
             }}
           />
+        ) : transactions.length === 0 ? (
+          <EmptyState
+            icon="receipt_long"
+            title="Aucune opération"
+            message="Ajoute la première écriture pour ce sous-compte."
+            action={
+              <Button type="button" fullWidth={false} className="mt-2 w-auto px-4" onClick={openCreate}>
+                Nouvelle opération
+              </Button>
+            }
+          />
         ) : (
-          <div className="flex flex-col gap-3">
-            {reversed.length === 0 ? (
-              <EmptyState
-                icon="receipt_long"
-                title="Aucune opération"
-                message="Ajoute la première écriture pour ce sous-compte."
-                action={
-                  <Button type="button" fullWidth={false} className="mt-2 w-auto px-4" onClick={openCreate}>
-                    Nouvelle opération
-                  </Button>
-                }
-              />
-            ) : (
-              <div className="overflow-x-auto rounded-panel border border-border-subtle bg-elevated">
-                <table className="w-full min-w-[44rem] table-fixed border-collapse text-left">
-                  <colgroup>
-                    <col className="w-[7.25rem]" />
-                    <col className="w-[7.25rem]" />
-                    <col className="w-12" />
-                    <col className="w-15" />
-                    <col />
-                    <col className="w-[11rem]" />
-                    <col className="w-[6.5rem]" />
-                    <col className="w-[6.5rem]" />
-                    <col className="w-[8.75rem]" />
-                  </colgroup>
-                  <thead>
-                    <tr className="border-b border-border-subtle bg-subtle/60 text-control text-fg-muted">
-                      <th scope="col" className="whitespace-nowrap px-2 py-2.5 text-left font-semibold sm:px-3">
-                        Date op.
-                      </th>
-                      <th scope="col" className="whitespace-nowrap px-2 py-2.5 text-center font-semibold sm:px-3">
-                        Date eff.
-                      </th>
-                      <th scope="col" className="whitespace-nowrap px-1 py-2.5 text-center font-semibold">
-                        Mode
-                      </th>
-                      <th scope="col" className="whitespace-nowrap px-1 py-2.5 text-center font-semibold">
-                        Enseigne
-                      </th>
-                      <th scope="col" className="px-2 py-2.5 text-left font-semibold sm:px-3">
-                        Libellé
-                      </th>
-                      <th scope="col" className="px-2 py-2.5 text-center font-semibold sm:px-3">
-                        Catégorie
-                      </th>
-                      <th scope="col" className="whitespace-nowrap px-2 py-2.5 text-center font-semibold sm:px-3">
-                        Montant
-                      </th>
-                      <th scope="col" className="whitespace-nowrap px-2 py-2.5 text-center font-semibold sm:px-3">
-                        Solde
-                      </th>
-                      <th scope="col" className="px-1 py-2.5">
-                        <span className="sr-only">Actions</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reversed.map((tx) => {
-                      const methodLabel = PAYMENT_METHOD_LABELS[tx.paymentMethod];
-                      const methodTooltip = tx.checkNumber ? `${methodLabel} n°${tx.checkNumber}` : methodLabel;
+          <div
+            className="min-h-0 flex-1 overflow-auto rounded-panel border border-border-subtle bg-elevated"
+            data-app-scroll
+          >
+            <table className="w-full min-w-[44rem] table-fixed border-separate border-spacing-0 text-left">
+              <colgroup>
+                <col className="w-[8rem]" />
+                <col className="w-[8rem]" />
+                <col className="w-12" />
+                <col className="w-16" />
+                <col />
+                <col className="w-[11rem]" />
+                <col className="w-[6.5rem]" />
+                <col className="w-[6.5rem]" />
+                <col className="w-[8.75rem]" />
+              </colgroup>
+              <thead>
+                <tr className="text-control text-fg-muted">
+                  <th
+                    scope="col"
+                    className="sticky top-0 z-10 whitespace-nowrap border-b border-border-subtle bg-subtle px-2 py-2.5 text-left font-semibold sm:px-3"
+                  >
+                    Date opération
+                  </th>
+                  <th
+                    scope="col"
+                    className="sticky top-0 z-10 whitespace-nowrap border-b border-border-subtle bg-subtle px-2 py-2.5 text-center font-semibold sm:px-3"
+                  >
+                    Date effective
+                  </th>
+                  <th
+                    scope="col"
+                    className="sticky top-0 z-10 whitespace-nowrap border-b border-border-subtle bg-subtle px-1 py-2.5 text-center font-semibold"
+                  >
+                    Mode
+                  </th>
+                  <th
+                    scope="col"
+                    className="sticky top-0 z-10 whitespace-nowrap border-b border-border-subtle bg-subtle px-1 py-2.5 text-center font-semibold"
+                  >
+                    Enseigne
+                  </th>
+                  <th
+                    scope="col"
+                    className="sticky top-0 z-10 border-b border-border-subtle bg-subtle px-2 py-2.5 text-left font-semibold sm:px-3"
+                  >
+                    Libellé
+                  </th>
+                  <th
+                    scope="col"
+                    className="sticky top-0 z-10 border-b border-border-subtle bg-subtle px-2 py-2.5 text-center font-semibold sm:px-3"
+                  >
+                    Catégorie
+                  </th>
+                  <th
+                    scope="col"
+                    className="sticky top-0 z-10 whitespace-nowrap border-b border-border-subtle bg-subtle px-2 py-2.5 text-center font-semibold sm:px-3"
+                  >
+                    Montant
+                  </th>
+                  <th
+                    scope="col"
+                    className="sticky top-0 z-10 whitespace-nowrap border-b border-border-subtle bg-subtle px-2 py-2.5 text-center font-semibold sm:px-3"
+                  >
+                    Solde
+                  </th>
+                  <th scope="col" className="sticky top-0 z-10 border-b border-border-subtle bg-subtle px-1 py-2.5">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((tx) => {
+                  const methodLabel = PAYMENT_METHOD_LABELS[tx.paymentMethod];
+                  const methodTooltip = tx.checkNumber ? `${methodLabel} n°${tx.checkNumber}` : methodLabel;
 
-                      return (
-                        <tr key={tx.id} className="border-b border-border-subtle last:border-b-0 hover:bg-subtle/40">
-                          <td className="whitespace-nowrap px-2 py-2.5 text-left align-middle text-control text-fg-secondary sm:px-3">
-                            {formatIsoDateFr(tx.operationDate, { weekday: 'short' })}
-                          </td>
-                          <td className="whitespace-nowrap px-2 py-2.5 text-center align-middle text-control sm:px-3">
-                            {tx.effectiveDate ? (
-                              <span className="text-fg-secondary">
-                                {formatIsoDateFr(tx.effectiveDate, { weekday: 'short' })}
-                              </span>
-                            ) : (
-                              <Tooltip content="En attente">
-                                <span className="inline-flex size-7 items-center justify-center rounded-full bg-accent-tint text-accent-press">
-                                  <Icon name="hourglass_empty" className="!text-icon-sm" />
-                                  <span className="sr-only">En attente</span>
-                                </span>
-                              </Tooltip>
-                            )}
-                          </td>
-                          <td className="px-1 py-2.5 text-center align-middle">
-                            <Tooltip content={methodTooltip}>
-                              <span className="inline-flex size-7 items-center justify-center rounded-full text-fg-secondary">
-                                <Icon name={PAYMENT_METHOD_ICONS[tx.paymentMethod]} className="text-icon-sm" />
-                                <span className="sr-only">{methodTooltip}</span>
-                              </span>
-                            </Tooltip>
-                          </td>
-                          <td className="px-1 py-2.5 text-center align-middle">
-                            {tx.merchant ? (
-                              <Tooltip content={tx.merchant.name}>
-                                <MerchantVisual
-                                  name={tx.merchant.name}
-                                  color={tx.merchant.color}
-                                  icon={tx.merchant.icon}
-                                  imageUrl={tx.merchant.imageUrl}
-                                  className="mx-auto size-7 rounded-full"
-                                  iconClassName="text-[13px]!"
-                                  showNativeTitle={false}
-                                />
-                              </Tooltip>
-                            ) : (
-                              <span className="text-control text-fg-muted">—</span>
-                            )}
-                          </td>
-                          <td className="min-w-0 px-2 py-2.5 text-left align-middle sm:px-3">
-                            <p className="truncate text-body font-medium text-fg-primary" title={tx.designation}>
-                              {tx.designation}
-                            </p>
-                          </td>
-                          <td className="px-2 py-2.5 text-center align-middle sm:px-3">
-                            <CategoryChip
-                              name={tx.category.name}
-                              color={tx.category.color}
-                              icon={tx.category.icon}
-                              className="w-full"
+                  return (
+                    <tr key={tx.id} className="border-b border-border-subtle last:border-b-0 hover:bg-subtle/40">
+                      <td className="whitespace-nowrap px-2 py-2.5 text-left align-middle text-control text-fg-secondary sm:px-3">
+                        {formatIsoDateFr(tx.operationDate, { weekday: 'short' })}
+                      </td>
+                      <td className="whitespace-nowrap px-2 py-2.5 text-center align-middle text-control sm:px-3">
+                        {tx.effectiveDate ? (
+                          <span className="text-fg-secondary">
+                            {formatIsoDateFr(tx.effectiveDate, { weekday: 'short' })}
+                          </span>
+                        ) : (
+                          <Tooltip content="En attente">
+                            <span className="inline-flex size-7 items-center justify-center rounded-full bg-accent-tint text-accent-press">
+                              <Icon name="hourglass_empty" className="!text-icon-sm" />
+                              <span className="sr-only">En attente</span>
+                            </span>
+                          </Tooltip>
+                        )}
+                      </td>
+                      <td className="px-1 py-2.5 text-center align-middle">
+                        <Tooltip content={methodTooltip}>
+                          <span className="inline-flex size-7 items-center justify-center rounded-full text-fg-secondary">
+                            <Icon name={PAYMENT_METHOD_ICONS[tx.paymentMethod]} className="text-icon-sm" />
+                            <span className="sr-only">{methodTooltip}</span>
+                          </span>
+                        </Tooltip>
+                      </td>
+                      <td className="px-1 py-2.5 text-center align-middle">
+                        {tx.merchant ? (
+                          <Tooltip content={tx.merchant.name}>
+                            <MerchantVisual
+                              name={tx.merchant.name}
+                              color={tx.merchant.color}
+                              icon={tx.merchant.icon}
+                              imageUrl={tx.merchant.imageUrl}
+                              className="mx-auto size-7 rounded-full"
+                              iconClassName="text-[13px]!"
+                              showNativeTitle={false}
                             />
-                          </td>
-                          <td
-                            className={cn(
-                              'whitespace-nowrap px-2 py-2.5 text-center align-middle text-body font-semibold tabular-nums sm:px-3',
-                              signedAmountClass(tx.amountCents),
-                            )}
-                          >
-                            {formatCents(tx.amountCents)}
-                          </td>
-                          <td className="whitespace-nowrap px-2 py-2.5 text-right align-middle text-control tabular-nums sm:px-3">
-                            {tx.effectiveDate ? (
-                              <span className={signedAmountClass(tx.balanceAfterCents)}>
-                                {formatCents(tx.balanceAfterCents)}
-                              </span>
-                            ) : (
-                              <Tooltip content="Solde provisoire (opération en attente)">
-                                <span className="inline-flex items-center justify-center rounded-full bg-accent-tint px-2.5 py-0.5 font-medium text-accent-press">
-                                  {formatCents(tx.balanceAfterCents)}
-                                </span>
-                              </Tooltip>
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-1 py-2.5 align-middle">
-                            <div className="flex justify-end gap-0.5">
-                              {tx.hasAttachment ? (
-                                <Tooltip
-                                  content={
-                                    tx.attachmentOriginalName
-                                      ? `Pièce jointe : ${tx.attachmentOriginalName}`
-                                      : 'Ouvrir la pièce jointe'
-                                  }
-                                >
-                                  <IconButton
-                                    variant={ICON_BUTTON_VARIANT.soft}
-                                    icon="attach_file"
-                                    aria-label={
-                                      tx.attachmentOriginalName
-                                        ? `Ouvrir ${tx.attachmentOriginalName}`
-                                        : 'Ouvrir la pièce jointe'
-                                    }
-                                    onClick={() => void openAttachment(tx)}
-                                  />
-                                </Tooltip>
-                              ) : null}
-                              <Tooltip content="Modifier">
-                                <IconButton
-                                  variant={ICON_BUTTON_VARIANT.soft}
-                                  icon="edit"
-                                  aria-label="Modifier"
-                                  onClick={() => openEdit(tx)}
-                                />
-                              </Tooltip>
-                              <Tooltip content="Supprimer">
-                                <IconButton
-                                  variant={ICON_BUTTON_VARIANT.danger}
-                                  icon="delete"
-                                  aria-label="Supprimer"
-                                  onClick={() => setPendingDelete(tx)}
-                                />
-                              </Tooltip>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          </Tooltip>
+                        ) : (
+                          <span className="text-control text-fg-muted">—</span>
+                        )}
+                      </td>
+                      <td className="min-w-0 px-2 py-2.5 text-left align-middle sm:px-3">
+                        <p className="truncate text-body font-medium text-fg-primary" title={tx.designation}>
+                          {tx.designation}
+                        </p>
+                      </td>
+                      <td className="px-2 py-2.5 text-center align-middle sm:px-3">
+                        <CategoryChip
+                          name={tx.category.name}
+                          color={tx.category.color}
+                          icon={tx.category.icon}
+                          className="w-full"
+                        />
+                      </td>
+                      <td
+                        className={cn(
+                          'whitespace-nowrap px-2 py-2.5 text-center align-middle text-body font-semibold tabular-nums sm:px-3',
+                          signedAmountClass(tx.amountCents),
+                        )}
+                      >
+                        {formatCents(tx.amountCents)}
+                      </td>
+                      <td className="whitespace-nowrap px-2 py-2.5 text-right align-middle text-control tabular-nums sm:px-3">
+                        {tx.effectiveDate ? (
+                          <span className={signedAmountClass(tx.balanceAfterCents)}>
+                            {formatCents(tx.balanceAfterCents)}
+                          </span>
+                        ) : (
+                          <Tooltip content="Solde provisoire (opération en attente)">
+                            <span className="inline-flex items-center justify-center rounded-full bg-accent-tint px-2.5 py-0.5 font-medium text-accent-press">
+                              {formatCents(tx.balanceAfterCents)}
+                            </span>
+                          </Tooltip>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-1 py-2.5 align-middle">
+                        <div className="flex justify-end gap-0.5">
+                          {tx.hasAttachment ? (
+                            <Tooltip
+                              content={
+                                tx.attachmentOriginalName
+                                  ? `Pièce jointe : ${tx.attachmentOriginalName}`
+                                  : 'Ouvrir la pièce jointe'
+                              }
+                            >
+                              <IconButton
+                                variant={ICON_BUTTON_VARIANT.soft}
+                                icon="attach_file"
+                                aria-label={
+                                  tx.attachmentOriginalName
+                                    ? `Ouvrir ${tx.attachmentOriginalName}`
+                                    : 'Ouvrir la pièce jointe'
+                                }
+                                onClick={() => void openAttachment(tx)}
+                              />
+                            </Tooltip>
+                          ) : null}
+                          <Tooltip content="Modifier">
+                            <IconButton
+                              variant={ICON_BUTTON_VARIANT.soft}
+                              icon="edit"
+                              aria-label="Modifier"
+                              onClick={() => openEdit(tx)}
+                            />
+                          </Tooltip>
+                          <Tooltip content="Supprimer">
+                            <IconButton
+                              variant={ICON_BUTTON_VARIANT.danger}
+                              icon="delete"
+                              aria-label="Supprimer"
+                              onClick={() => setPendingDelete(tx)}
+                            />
+                          </Tooltip>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {ledger.hasMore ? (
+              <div
+                ref={loadMoreSentinelRef}
+                className="flex items-center justify-center py-3"
+                aria-hidden={!loadingMore}
+              >
+                {loadingMore ? <p className="text-control text-fg-muted">Chargement…</p> : null}
               </div>
-            )}
+            ) : null}
           </div>
         )}
       </div>
@@ -955,7 +1039,7 @@ export function AccountLedgerPage() {
                   onDragLeave={onAttachmentDragLeave}
                   onDrop={onAttachmentDrop}
                   className={cn(
-                    'flex min-h-24 flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-panel border border-dashed px-4 py-4 transition-colors',
+                    'flex min-h-24 flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-control border border-dashed px-4 py-4 transition-colors',
                     attachmentDragging
                       ? 'border-accent bg-accent-tint/40'
                       : 'border-border-subtle bg-elevated/40 hover:border-accent/60',

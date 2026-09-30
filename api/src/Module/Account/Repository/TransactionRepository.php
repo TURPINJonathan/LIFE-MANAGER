@@ -71,6 +71,45 @@ class TransactionRepository extends ServiceEntityRepository
         return $rows;
     }
 
+    /**
+     * Newest-first page (reverse of {@see listForSubAccount}).
+     *
+     * @return list<Transaction>
+     */
+    public function listForSubAccountNewestFirst(SubAccount $subAccount, int $limit, int $offset = 0): array
+    {
+        /** @var list<Transaction> $rows */
+        $rows = $this->createQueryBuilder('t')
+            ->andWhere('t.subAccount = :sub')
+            ->setParameter('sub', $subAccount)
+            ->addSelect('CASE WHEN t.effectiveDate IS NULL THEN 1 ELSE 0 END AS HIDDEN pending')
+            ->orderBy('pending', 'DESC')
+            ->addOrderBy('t.effectiveDate', 'DESC')
+            ->addOrderBy('t.operationDate', 'DESC')
+            ->addOrderBy('t.id', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return $rows;
+    }
+
+    /** Somme des montants des $count opérations les plus récentes (ordre newest-first). */
+    public function sumAmountCentsNewestFirst(SubAccount $subAccount, int $count): int
+    {
+        if ($count <= 0) {
+            return 0;
+        }
+
+        $sum = 0;
+        foreach ($this->listForSubAccountNewestFirst($subAccount, $count) as $transaction) {
+            $sum += $transaction->getAmountCents();
+        }
+
+        return $sum;
+    }
+
     public function sumAmountCents(SubAccount $subAccount): int
     {
         $sum = $this->createQueryBuilder('t')

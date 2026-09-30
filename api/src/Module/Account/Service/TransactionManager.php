@@ -33,21 +33,47 @@ final class TransactionManager
     ) {
     }
 
+    private const LEDGER_DEFAULT_LIMIT = 50;
+    private const LEDGER_MAX_LIMIT = 100;
+
     /**
-     * @return array{subAccount: array<string, mixed>, openingBalanceCents: int, transactions: list<array<string, mixed>>}
+     * Relevé paginé, plus récent en premier.
+     *
+     * @return array{
+     *   subAccount: array<string, mixed>,
+     *   openingBalanceCents: int,
+     *   transactions: list<array<string, mixed>>,
+     *   hasMore: bool,
+     *   nextOffset: int|null
+     * }
      */
-    public function listForSubAccount(string $subAccountId): array
+    public function listForSubAccount(string $subAccountId, int $limit = self::LEDGER_DEFAULT_LIMIT, int $offset = 0): array
     {
+        $limit = max(1, min(self::LEDGER_MAX_LIMIT, $limit));
+        $offset = max(0, $offset);
+
         $sub = $this->accounts->requireSubAccountEntity($subAccountId);
+        $provisional = $this->balances->provisionalBalanceCents($sub);
+        $skippedSum = $this->transactions->sumAmountCentsNewestFirst($sub, $offset);
+        $page = $this->transactions->listForSubAccountNewestFirst($sub, $limit + 1, $offset);
+        $hasMore = \count($page) > $limit;
+        if ($hasMore) {
+            $page = \array_slice($page, 0, $limit);
+        }
+
+        $running = $provisional - $skippedSum;
         $rows = [];
-        foreach ($this->balances->withRunningBalances($sub) as $row) {
-            $rows[] = $this->serialize($row['transaction'], $row['balanceAfterCents']);
+        foreach ($page as $transaction) {
+            $rows[] = $this->serialize($transaction, $running);
+            $running -= $transaction->getAmountCents();
         }
 
         return [
-            'subAccount' => $this->accounts->getSubAccount($subAccountId),
+            'subAccount'          => $this->accounts->getSubAccount($subAccountId),
             'openingBalanceCents' => $sub->getOpeningBalanceCents(),
-            'transactions' => $rows,
+            'transactions'        => $rows,
+            'hasMore'             => $hasMore,
+            'nextOffset'          => $hasMore ? $offset + $limit : null,
         ];
     }
 
@@ -292,38 +318,38 @@ final class TransactionManager
             $merchantId = (string) $merchant->getId();
             $merchantHasImage = $merchant->hasImage();
             $merchantPayload = [
-                'id' => $merchantId,
-                'name' => $merchant->getName(),
-                'color' => $merchant->getColor(),
-                'icon' => $merchant->getIcon(),
+                'id'       => $merchantId,
+                'name'     => $merchant->getName(),
+                'color'    => $merchant->getColor(),
+                'icon'     => $merchant->getIcon(),
                 'hasImage' => $merchantHasImage,
                 'imageUrl' => $merchantHasImage ? '/api/merchants/'.$merchantId.'/image' : null,
             ];
         }
 
         return [
-            'id' => $id,
+            'id'           => $id,
             'subAccountId' => (string) $tx->getSubAccount()->getId(),
-            'category' => [
-                'id' => (string) $category->getId(),
-                'name' => $category->getName(),
-                'icon' => $category->getIcon(),
+            'category'     => [
+                'id'    => (string) $category->getId(),
+                'name'  => $category->getName(),
+                'icon'  => $category->getIcon(),
                 'color' => $category->getColor(),
-                'kind' => $category->getKind()->value,
+                'kind'  => $category->getKind()->value,
             ],
-            'merchant' => $merchantPayload,
-            'operationDate' => $tx->getOperationDate()->format('Y-m-d'),
-            'effectiveDate' => $tx->getEffectiveDate()?->format('Y-m-d'),
-            'paymentMethod' => $tx->getPaymentMethod()->value,
-            'checkNumber' => $tx->getCheckNumber(),
-            'designation' => $tx->getDesignation(),
-            'amountCents' => $tx->getAmountCents(),
-            'hasAttachment' => $hasAttachment,
-            'attachmentUrl' => $hasAttachment ? '/api/transactions/'.$id.'/attachment' : null,
+            'merchant'               => $merchantPayload,
+            'operationDate'          => $tx->getOperationDate()->format('Y-m-d'),
+            'effectiveDate'          => $tx->getEffectiveDate()?->format('Y-m-d'),
+            'paymentMethod'          => $tx->getPaymentMethod()->value,
+            'checkNumber'            => $tx->getCheckNumber(),
+            'designation'            => $tx->getDesignation(),
+            'amountCents'            => $tx->getAmountCents(),
+            'hasAttachment'          => $hasAttachment,
+            'attachmentUrl'          => $hasAttachment ? '/api/transactions/'.$id.'/attachment' : null,
             'attachmentOriginalName' => $tx->getAttachmentOriginalName(),
-            'balanceAfterCents' => $balanceAfterCents,
-            'createdAt' => $tx->getCreatedAt()->format(\DateTimeInterface::ATOM),
-            'updatedAt' => $tx->getUpdatedAt()->format(\DateTimeInterface::ATOM),
+            'balanceAfterCents'      => $balanceAfterCents,
+            'createdAt'              => $tx->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'updatedAt'              => $tx->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ];
     }
 }

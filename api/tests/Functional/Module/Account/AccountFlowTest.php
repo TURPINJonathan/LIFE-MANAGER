@@ -40,10 +40,10 @@ final class AccountFlowTest extends WebTestCase
     public function testAccountSubAccountCategoryAndTransactionFlow(): void
     {
         $category = $this->json('POST', '/api/categories', [
-            'name' => 'Courses',
-            'icon' => 'shopping_cart',
+            'name'  => 'Courses',
+            'icon'  => 'shopping_cart',
             'color' => '#16A34A',
-            'kind' => 'expense',
+            'kind'  => 'expense',
         ]);
         self::assertResponseStatusCodeSame(201);
 
@@ -51,21 +51,21 @@ final class AccountFlowTest extends WebTestCase
         self::assertResponseStatusCodeSame(201);
 
         $sub = $this->json('POST', '/api/accounts/'.$account['id'].'/sub-accounts', [
-            'name' => 'Courant',
-            'icon' => 'account_balance',
-            'color' => '#2563EB',
+            'name'                => 'Courant',
+            'icon'                => 'account_balance',
+            'color'               => '#2563EB',
             'openingBalanceCents' => 10_000,
         ]);
         self::assertResponseStatusCodeSame(201);
         self::assertSame(10_000, $sub['balanceCents']);
 
         $tx = $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/transactions', [
-            'categoryId' => $category['id'],
+            'categoryId'    => $category['id'],
             'operationDate' => '2026-01-05',
             'effectiveDate' => '2026-01-05',
             'paymentMethod' => 'card',
-            'designation' => 'Supermarché',
-            'amountCents' => 2_500,
+            'designation'   => 'Supermarché',
+            'amountCents'   => 2_500,
         ]);
         self::assertResponseStatusCodeSame(201);
         self::assertSame(7_500, $tx['balanceAfterCents']);
@@ -73,6 +73,8 @@ final class AccountFlowTest extends WebTestCase
         $ledger = $this->json('GET', '/api/sub-accounts/'.$sub['id'].'/transactions');
         self::assertCount(1, $ledger['transactions']);
         self::assertSame(7_500, $ledger['transactions'][0]['balanceAfterCents']);
+        self::assertFalse($ledger['hasMore']);
+        self::assertNull($ledger['nextOffset']);
 
         $this->client->request(
             'DELETE',
@@ -80,6 +82,64 @@ final class AccountFlowTest extends WebTestCase
             server: $this->authHeaders(),
         );
         self::assertResponseStatusCodeSame(409);
+    }
+
+    public function testLedgerPaginationReturnsNewestFirstWithRunningBalances(): void
+    {
+        $category = $this->json('POST', '/api/categories', [
+            'name'  => 'Courses',
+            'icon'  => 'shopping_cart',
+            'color' => '#16A34A',
+            'kind'  => 'expense',
+        ]);
+        $account = $this->json('POST', '/api/accounts', ['name' => 'Comptes Ada']);
+        $sub = $this->json('POST', '/api/accounts/'.$account['id'].'/sub-accounts', [
+            'name'                => 'Courant',
+            'icon'                => 'account_balance',
+            'color'               => '#2563EB',
+            'openingBalanceCents' => 10_000,
+        ]);
+
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/transactions', [
+            'categoryId'    => $category['id'],
+            'operationDate' => '2026-01-01',
+            'effectiveDate' => '2026-01-01',
+            'paymentMethod' => 'card',
+            'designation'   => 'Ancienne',
+            'amountCents'   => 1_000,
+        ]);
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/transactions', [
+            'categoryId'    => $category['id'],
+            'operationDate' => '2026-01-02',
+            'effectiveDate' => '2026-01-02',
+            'paymentMethod' => 'card',
+            'designation'   => 'Milieu',
+            'amountCents'   => 2_000,
+        ]);
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/transactions', [
+            'categoryId'    => $category['id'],
+            'operationDate' => '2026-01-03',
+            'effectiveDate' => '2026-01-03',
+            'paymentMethod' => 'card',
+            'designation'   => 'Récente',
+            'amountCents'   => 3_000,
+        ]);
+
+        $page1 = $this->json('GET', '/api/sub-accounts/'.$sub['id'].'/transactions?limit=2&offset=0');
+        self::assertTrue($page1['hasMore']);
+        self::assertSame(2, $page1['nextOffset']);
+        self::assertCount(2, $page1['transactions']);
+        self::assertSame('Récente', $page1['transactions'][0]['designation']);
+        self::assertSame(4_000, $page1['transactions'][0]['balanceAfterCents']);
+        self::assertSame('Milieu', $page1['transactions'][1]['designation']);
+        self::assertSame(7_000, $page1['transactions'][1]['balanceAfterCents']);
+
+        $page2 = $this->json('GET', '/api/sub-accounts/'.$sub['id'].'/transactions?limit=2&offset=2');
+        self::assertFalse($page2['hasMore']);
+        self::assertNull($page2['nextOffset']);
+        self::assertCount(1, $page2['transactions']);
+        self::assertSame('Ancienne', $page2['transactions'][0]['designation']);
+        self::assertSame(9_000, $page2['transactions'][0]['balanceAfterCents']);
     }
 
     /**
@@ -116,7 +176,7 @@ final class AccountFlowTest extends WebTestCase
     private function authHeaders(): array
     {
         return [
-            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_ACCEPT'        => 'application/json',
             'HTTP_AUTHORIZATION' => 'Bearer '.$this->token,
         ];
     }

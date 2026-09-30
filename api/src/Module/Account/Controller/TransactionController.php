@@ -25,10 +25,13 @@ final class TransactionController extends AbstractController
     }
 
     #[Route('/api/sub-accounts/{subAccountId}/transactions', name: 'api_transactions_list', methods: ['GET'])]
-    public function list(string $subAccountId): JsonResponse
+    public function list(string $subAccountId, Request $request): JsonResponse
     {
+        $limit = $request->query->getInt('limit', 50);
+        $offset = $request->query->getInt('offset', 0);
+
         try {
-            return new JsonResponse($this->transactions->listForSubAccount($subAccountId));
+            return new JsonResponse($this->transactions->listForSubAccount($subAccountId, $limit, $offset));
         } catch (SubAccountNotFoundException $e) {
             return JsonRequest::error($e, Response::HTTP_NOT_FOUND);
         }
@@ -41,15 +44,15 @@ final class TransactionController extends AbstractController
 
         try {
             $payload = $this->transactions->create($subAccountId, [
-                'categoryId' => JsonRequest::requireString($data, 'categoryId'),
-                'merchantId' => JsonRequest::optionalString($data, 'merchantId'),
+                'categoryId'    => JsonRequest::requireString($data, 'categoryId'),
+                'merchantId'    => JsonRequest::optionalString($data, 'merchantId'),
                 'operationDate' => JsonRequest::requireString($data, 'operationDate'),
                 'effectiveDate' => JsonRequest::optionalString($data, 'effectiveDate'),
                 'paymentMethod' => JsonRequest::requireString($data, 'paymentMethod'),
-                'checkNumber' => JsonRequest::optionalString($data, 'checkNumber'),
-                'designation' => JsonRequest::requireString($data, 'designation'),
-                'amountCents' => JsonRequest::requireInt($data, 'amountCents'),
-                'flow' => JsonRequest::optionalString($data, 'flow'),
+                'checkNumber'   => JsonRequest::optionalString($data, 'checkNumber'),
+                'designation'   => JsonRequest::requireString($data, 'designation'),
+                'amountCents'   => JsonRequest::requireInt($data, 'amountCents'),
+                'flow'          => JsonRequest::optionalString($data, 'flow'),
             ]);
         } catch (SubAccountNotFoundException|CategoryNotFoundException|MerchantNotFoundException $e) {
             return JsonRequest::error($e, Response::HTTP_NOT_FOUND);

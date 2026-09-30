@@ -98,8 +98,17 @@ export async function archiveSubAccount(token: string, id: string): Promise<SubA
   return readJson<SubAccount>(response);
 }
 
-export async function fetchLedger(token: string, subAccountId: string): Promise<LedgerPayload> {
-  const response = await apiFetch(`/api/sub-accounts/${subAccountId}/transactions`, { method: 'GET' }, token);
+export async function fetchLedger(
+  token: string,
+  subAccountId: string,
+  options: { limit?: number; offset?: number } = {},
+): Promise<LedgerPayload> {
+  const params = new URLSearchParams();
+  if (options.limit !== undefined) params.set('limit', String(options.limit));
+  if (options.offset !== undefined) params.set('offset', String(options.offset));
+  const query = params.toString();
+  const path = `/api/sub-accounts/${subAccountId}/transactions${query ? `?${query}` : ''}`;
+  const response = await apiFetch(path, { method: 'GET' }, token);
   if (!response.ok) {
     return parseError(response, 'Impossible de charger le relevé.');
   }
