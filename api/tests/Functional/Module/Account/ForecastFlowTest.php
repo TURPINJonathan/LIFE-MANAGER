@@ -122,6 +122,73 @@ final class ForecastFlowTest extends WebTestCase
         self::assertNull($gone);
     }
 
+    public function testPreviousMonthSnapshotExposesScheduledLines(): void
+    {
+        $expense = $this->json('POST', '/api/categories', [
+            'name'  => 'Loyer',
+            'icon'  => 'home',
+            'color' => '#2563EB',
+            'kind'  => 'expense',
+        ]);
+        $income = $this->json('POST', '/api/categories', [
+            'name'  => 'Salaire',
+            'icon'  => 'payments',
+            'color' => '#16A34A',
+            'kind'  => 'income',
+        ]);
+        $account = $this->json('POST', '/api/accounts', ['name' => 'Perso']);
+        $sub = $this->json('POST', '/api/accounts/'.$account['id'].'/sub-accounts', [
+            'name'                => 'Courant',
+            'icon'                => 'account_balance',
+            'color'               => '#2563EB',
+            'openingBalanceCents' => 10_000,
+        ]);
+
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/forecasts', [
+            'yearMonth' => '2026-01',
+            'lines'     => [
+                ['categoryId' => $income['id'], 'plannedAmountCents' => 200_000],
+                ['categoryId' => $expense['id'], 'plannedAmountCents' => 40_000, 'scheduledDay' => 5],
+                ['categoryId' => $expense['id'], 'plannedAmountCents' => 20_000, 'scheduledDay' => 20],
+            ],
+        ]);
+
+        // Budget courant sans Loyer → Loyer devient orphelin M−1.
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/forecasts', [
+            'yearMonth' => '2026-02',
+            'lines'     => [
+                ['categoryId' => $income['id'], 'plannedAmountCents' => 200_000],
+            ],
+        ]);
+
+        $stats = $this->json('GET', '/api/sub-accounts/'.$sub['id'].'/forecast-stats?yearMonth=2026-02');
+        self::assertNotNull($stats['previousMonth'] ?? null);
+        $orphans = $stats['previousMonth']['orphans'];
+        self::assertCount(1, $orphans);
+        self::assertSame($expense['id'], $orphans[0]['categoryId']);
+        self::assertSame(
+            [
+                ['plannedAmountCents' => 40_000, 'scheduledDay' => 5],
+                ['plannedAmountCents' => 20_000, 'scheduledDay' => 20],
+            ],
+            $orphans[0]['previousLines'],
+        );
+
+        $categories = $stats['previousMonth']['categories'];
+        $incomePrev = null;
+        foreach ($categories as $row) {
+            if ($row['categoryId'] === $income['id']) {
+                $incomePrev = $row;
+                break;
+            }
+        }
+        self::assertNotNull($incomePrev);
+        self::assertSame(
+            [['plannedAmountCents' => 200_000, 'scheduledDay' => null]],
+            $incomePrev['previousLines'],
+        );
+    }
+
     /**
      * @param array<string, mixed>|null $body
      *

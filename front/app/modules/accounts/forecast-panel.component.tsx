@@ -428,16 +428,37 @@ export function ForecastPanel({
 
   const addOrphanFromPrevious = (orphan: ForecastStatsPreviousCategory) => {
     const tone: BudgetTone = orphan.isExpense ? 'expense' : 'income';
+    const flow = orphan.flow ?? (tone === 'income' ? 'credit' : 'debit');
+    const previousLines = orphan.previousLines ?? [];
+
+    if (previousLines.length > 1) {
+      const existing = forecast ? forecastToLineInputs(forecast.lines) : [];
+      const toAdd: ForecastLineInput[] = previousLines.map((line) => ({
+        categoryId: orphan.categoryId,
+        plannedAmountCents: line.plannedAmountCents,
+        flow,
+        scheduledDay: line.scheduledDay,
+      }));
+      void persistLines([...existing, ...toAdd]);
+      return;
+    }
+
+    const single = previousLines[0];
     const seedCents =
-      orphan.previousPlannedAmountCents > 0 ? orphan.previousPlannedAmountCents : orphan.previousActualAmountCents;
+      single !== undefined
+        ? single.plannedAmountCents
+        : orphan.previousPlannedAmountCents > 0
+          ? orphan.previousPlannedAmountCents
+          : orphan.previousActualAmountCents;
+
     setLineDialog({
       mode: 'create',
       tone,
       seed: {
         categoryId: orphan.categoryId,
         amount: centsToInput(seedCents),
-        flow: orphan.flow ?? (tone === 'income' ? 'credit' : 'debit'),
-        scheduledDay: null,
+        flow,
+        scheduledDay: single !== undefined ? single.scheduledDay : null,
       },
     });
   };

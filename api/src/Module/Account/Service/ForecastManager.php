@@ -608,7 +608,7 @@ final class ForecastManager
         $prevTx = $this->transactions->listForSubAccountBetween($sub, $prevFrom, $prevTo);
         $prevForecast = $this->forecasts->findForSubAccountMonth($sub, $prevYm);
 
-        /** @var array<string, array{category: Category, flow: ?string, isExpense: bool, actualSigned: int, plannedAbs: int, plannedSigned: int}> $byKey */
+        /** @var array<string, array{category: Category, flow: ?string, isExpense: bool, actualSigned: int, plannedAbs: int, plannedSigned: int, lines: list<array{plannedAmountCents: int, scheduledDay: ?int}>}> $byKey */
         $byKey = [];
 
         foreach ($prevTx as $tx) {
@@ -625,6 +625,7 @@ final class ForecastManager
                     'actualSigned'  => 0,
                     'plannedAbs'    => 0,
                     'plannedSigned' => 0,
+                    'lines'         => [],
                 ];
             }
             $byKey[$key]['actualSigned'] += $tx->getAmountCents();
@@ -647,10 +648,15 @@ final class ForecastManager
                         'actualSigned'  => 0,
                         'plannedAbs'    => 0,
                         'plannedSigned' => 0,
+                        'lines'         => [],
                     ];
                 }
                 $byKey[$key]['plannedAbs'] += $line->getPlannedAmountCents();
                 $byKey[$key]['plannedSigned'] += $signed;
+                $byKey[$key]['lines'][] = [
+                    'plannedAmountCents' => $line->getPlannedAmountCents(),
+                    'scheduledDay'       => $line->getScheduledDay(),
+                ];
             }
         }
 
@@ -674,6 +680,13 @@ final class ForecastManager
         $actualExpenseCents = 0;
 
         foreach ($byKey as $key => $info) {
+            $previousLines = $info['lines'];
+            usort(
+                $previousLines,
+                static fn (array $a, array $b): int => ($a['scheduledDay'] ?? 32) <=> ($b['scheduledDay'] ?? 32)
+                    ?: $a['plannedAmountCents'] <=> $b['plannedAmountCents'],
+            );
+
             $payload = [
                 'categoryId'                 => (string) $info['category']->getId(),
                 'categoryName'               => $info['category']->getName(),
@@ -686,6 +699,7 @@ final class ForecastManager
                 'previousActualAmountCents'  => abs($info['actualSigned']),
                 'previousPlannedAmountCents' => $info['plannedAbs'],
                 'previousPlannedSignedCents' => $info['plannedSigned'],
+                'previousLines'              => $previousLines,
             ];
 
             if ($info['plannedSigned'] > 0) {
@@ -726,6 +740,7 @@ final class ForecastManager
                 'previousActualAmountCents'  => 0,
                 'previousPlannedAmountCents' => 0,
                 'previousPlannedSignedCents' => 0,
+                'previousLines'              => [],
             ];
         }
 

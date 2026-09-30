@@ -21,6 +21,7 @@ export type {
   ForecastStats,
   ForecastStatsCategory,
   ForecastStatsPreviousCategory,
+  ForecastStatsPreviousLine,
   ForecastTimelinePoint,
   LedgerPayload,
   LedgerTransaction,

@@ -151,6 +151,11 @@ export type ForecastTimelinePoint = {
   }>;
 };
 
+export type ForecastStatsPreviousLine = {
+  plannedAmountCents: number;
+  scheduledDay: number | null;
+};
+
 export type ForecastStatsPreviousCategory = {
   categoryId: string;
   categoryName: string;
@@ -163,6 +168,8 @@ export type ForecastStatsPreviousCategory = {
   previousActualAmountCents: number;
   previousPlannedAmountCents: number;
   previousPlannedSignedCents: number;
+  /** Échéances du budget M−1 (montant + jour), pour préremplir à l’ajout. */
+  previousLines: ForecastStatsPreviousLine[];
 };
 
 export type ForecastStats = {
