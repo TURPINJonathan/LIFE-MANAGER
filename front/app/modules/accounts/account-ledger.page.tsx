@@ -718,7 +718,19 @@ export function AccountLedgerPage() {
                   const methodTooltip = tx.checkNumber ? `${methodLabel} n°${tx.checkNumber}` : methodLabel;
 
                   return (
-                    <tr key={tx.id} className="border-b border-border-subtle last:border-b-0 hover:bg-subtle/40">
+                    <tr
+                      key={tx.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Modifier ${tx.designation}`}
+                      className="cursor-pointer border-b border-border-subtle last:border-b-0 hover:bg-subtle/40"
+                      onClick={() => openEdit(tx)}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter' && event.key !== ' ') return;
+                        event.preventDefault();
+                        openEdit(tx);
+                      }}
+                    >
                       <td className="whitespace-nowrap px-2 py-2.5 text-left align-middle text-control text-fg-secondary sm:px-3">
                         {formatIsoDateFr(tx.operationDate, { weekday: 'short' })}
                       </td>
@@ -795,7 +807,11 @@ export function AccountLedgerPage() {
                           </Tooltip>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-1 py-2.5 align-middle">
+                      <td
+                        className="cursor-default whitespace-nowrap px-1 py-2.5 align-middle"
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => event.stopPropagation()}
+                      >
                         <div className="flex justify-end gap-0.5">
                           {tx.hasAttachment ? (
                             <Tooltip
