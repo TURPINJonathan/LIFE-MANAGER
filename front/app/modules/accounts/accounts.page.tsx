@@ -19,6 +19,7 @@ import { cn, formatCents, signedAmountClass, toastFromError } from '@utils';
 
 import { BalanceTimelineChart } from './balance-timeline-chart.component';
 import {
+  aggregateDashboardCategoryBars,
   aggregateDashboardForecast,
   aggregateDashboardTimeline,
   budgetStatusLabel,
@@ -234,6 +235,8 @@ export function AccountsPage() {
     [subs, statsBySubId, previousStatsBySubId],
   );
 
+  const categoryBars = useMemo(() => aggregateDashboardCategoryBars(statsBySubId), [statsBySubId]);
+
   const upcomingDeadlines = useMemo(() => collectUpcomingDeadlines(subs, statsBySubId, 6), [subs, statsBySubId]);
 
   const watchItems = useMemo<WatchItem[]>(() => {
@@ -422,7 +425,7 @@ export function AccountsPage() {
                     {formatCents(totalBalance)}
                   </p>
                   <p className="mt-1 truncate text-[11px] tabular-nums text-fg-muted">
-                    Réaliste{' '}
+                    Fin estimée{' '}
                     <span
                       className={cn(
                         'font-semibold',
@@ -609,6 +612,7 @@ export function AccountsPage() {
                     className="min-h-52"
                     points={timeline.points}
                     daysElapsed={timeline.daysElapsed}
+                    categoryBars={categoryBars}
                     previousActualPoints={showPreviousOnChart ? timeline.previousActualPoints : []}
                     previousMonthLabel={previousMonthLabel}
                     onTogglePrevious={

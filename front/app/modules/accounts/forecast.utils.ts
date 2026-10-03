@@ -1,6 +1,119 @@
-import type { ForecastStats, ForecastTimelinePoint, SubAccount } from '@app-types';
+import type { CategoryKind, ForecastStats, ForecastStatsCategory, ForecastTimelinePoint, SubAccount } from '@app-types';
+
+import { isExpenseStatsRow } from './forecast-budget.utils';
 
 export type FlatSubAccount = SubAccount & { accountName: string };
+
+export type AggregatedStatsCategory = {
+  key: string;
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  categoryKind: CategoryKind;
+  flow: 'credit' | 'debit' | null;
+  scheduledDays: number[];
+  plannedAmountCents: number;
+  plannedSignedCents: number;
+  actualAmountCents: number;
+  actualSignedCents: number;
+  remainingCents: number;
+  consumptionPercent: number;
+  overBudget: boolean;
+  lineCount: number;
+};
+
+export type CategoryBarItem = {
+  key: string;
+  name: string;
+  color: string;
+  plannedCents: number;
+  actualCents: number;
+  isExpense: boolean;
+};
+
+/** Agrège les lignes stats (plusieurs échéances / sous-comptes) par catégorie+flux. */
+export function aggregateStatsCategories(rows: ForecastStatsCategory[]): AggregatedStatsCategory[] {
+  const map = new Map<string, AggregatedStatsCategory>();
+
+  for (const row of rows) {
+    const key = `${row.categoryId}:${row.flow ?? 'auto'}`;
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, {
+        key,
+        categoryId: row.categoryId,
+        categoryName: row.categoryName,
+        categoryIcon: row.categoryIcon,
+        categoryColor: row.categoryColor,
+        categoryKind: row.categoryKind,
+        flow: row.flow,
+        scheduledDays: row.scheduledDay !== null ? [row.scheduledDay] : [],
+        plannedAmountCents: row.plannedAmountCents,
+        plannedSignedCents: row.plannedSignedCents,
+        actualAmountCents: row.actualAmountCents,
+        actualSignedCents: row.actualSignedCents,
+        remainingCents: row.remainingCents,
+        consumptionPercent: 0,
+        overBudget: false,
+        lineCount: 1,
+      });
+      continue;
+    }
+
+    existing.plannedAmountCents += row.plannedAmountCents;
+    existing.plannedSignedCents += row.plannedSignedCents;
+    existing.actualAmountCents += row.actualAmountCents;
+    existing.actualSignedCents += row.actualSignedCents;
+    existing.remainingCents += row.remainingCents;
+    existing.lineCount += 1;
+    if (row.scheduledDay !== null && !existing.scheduledDays.includes(row.scheduledDay)) {
+      existing.scheduledDays.push(row.scheduledDay);
+    }
+  }
+
+  return [...map.values()]
+    .map((row) => {
+      const consumptionPercent =
+        row.plannedAmountCents > 0
+          ? Math.round((row.actualAmountCents / row.plannedAmountCents) * 100)
+          : row.actualAmountCents > 0
+            ? 100
+            : 0;
+      const isExpense = isExpenseStatsRow(row);
+      return {
+        ...row,
+        scheduledDays: [...row.scheduledDays].sort((a, b) => a - b),
+        consumptionPercent,
+        overBudget: isExpense && row.actualAmountCents > row.plannedAmountCents,
+      };
+    })
+    .sort((a, b) => {
+      const aExpense = isExpenseStatsRow(a);
+      const bExpense = isExpenseStatsRow(b);
+      if (aExpense !== bExpense) {
+        return aExpense ? -1 : 1;
+      }
+      return b.consumptionPercent - a.consumptionPercent || a.categoryName.localeCompare(b.categoryName, 'fr');
+    });
+}
+
+export function toCategoryBars(rows: AggregatedStatsCategory[]): CategoryBarItem[] {
+  return rows.map((row) => ({
+    key: row.key,
+    name: row.categoryName,
+    color: row.categoryColor,
+    plannedCents: row.plannedAmountCents,
+    actualCents: row.actualAmountCents,
+    isExpense: isExpenseStatsRow(row),
+  }));
+}
+
+/** Totaux catégories combinés pour le dashboard (tous sous-comptes). */
+export function aggregateDashboardCategoryBars(statsBySubId: Record<string, ForecastStats | null>): CategoryBarItem[] {
+  const rows = Object.values(statsBySubId).flatMap((stats) => stats?.categories ?? []);
+  return toCategoryBars(aggregateStatsCategories(rows));
+}
 
 export type SubForecastSummary = {
   hasForecast: boolean;

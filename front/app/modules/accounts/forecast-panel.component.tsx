@@ -15,10 +15,8 @@ import {
 import { useAuthStore } from '@store';
 import type {
   Category,
-  CategoryKind,
   ForecastLineInput,
   ForecastStats,
-  ForecastStatsCategory,
   ForecastStatsPreviousCategory,
   MonthlyForecast,
 } from '@app-types';
@@ -50,7 +48,12 @@ import {
   type ForecastLineEditContext,
   type ForecastLineFormValues,
 } from './forecast-line-dialog.component';
-import { formatMonthLabel } from './forecast.utils';
+import {
+  aggregateStatsCategories,
+  formatMonthLabel,
+  toCategoryBars,
+  type AggregatedStatsCategory,
+} from './forecast.utils';
 
 type DraftLine = ForecastDraftLine;
 
@@ -80,90 +83,6 @@ export type ForecastChromeActions = {
   onDuplicate: () => void;
   previousMonthLabel: string;
 };
-
-type AggregatedStatsCategory = {
-  key: string;
-  categoryId: string;
-  categoryName: string;
-  categoryIcon: string;
-  categoryColor: string;
-  categoryKind: CategoryKind;
-  flow: 'credit' | 'debit' | null;
-  scheduledDays: number[];
-  plannedAmountCents: number;
-  plannedSignedCents: number;
-  actualAmountCents: number;
-  actualSignedCents: number;
-  remainingCents: number;
-  consumptionPercent: number;
-  overBudget: boolean;
-  lineCount: number;
-};
-
-function aggregateStatsCategories(rows: ForecastStatsCategory[]): AggregatedStatsCategory[] {
-  const map = new Map<string, AggregatedStatsCategory>();
-
-  for (const row of rows) {
-    const key = `${row.categoryId}:${row.flow ?? 'auto'}`;
-    const existing = map.get(key);
-    if (!existing) {
-      map.set(key, {
-        key,
-        categoryId: row.categoryId,
-        categoryName: row.categoryName,
-        categoryIcon: row.categoryIcon,
-        categoryColor: row.categoryColor,
-        categoryKind: row.categoryKind,
-        flow: row.flow,
-        scheduledDays: row.scheduledDay !== null ? [row.scheduledDay] : [],
-        plannedAmountCents: row.plannedAmountCents,
-        plannedSignedCents: row.plannedSignedCents,
-        actualAmountCents: row.actualAmountCents,
-        actualSignedCents: row.actualSignedCents,
-        remainingCents: row.remainingCents,
-        consumptionPercent: 0,
-        overBudget: false,
-        lineCount: 1,
-      });
-      continue;
-    }
-
-    existing.plannedAmountCents += row.plannedAmountCents;
-    existing.plannedSignedCents += row.plannedSignedCents;
-    existing.actualAmountCents += row.actualAmountCents;
-    existing.actualSignedCents += row.actualSignedCents;
-    existing.remainingCents += row.remainingCents;
-    existing.lineCount += 1;
-    if (row.scheduledDay !== null && !existing.scheduledDays.includes(row.scheduledDay)) {
-      existing.scheduledDays.push(row.scheduledDay);
-    }
-  }
-
-  return [...map.values()]
-    .map((row) => {
-      const consumptionPercent =
-        row.plannedAmountCents > 0
-          ? Math.round((row.actualAmountCents / row.plannedAmountCents) * 100)
-          : row.actualAmountCents > 0
-            ? 100
-            : 0;
-      const isExpense = isExpenseStatsRow(row);
-      return {
-        ...row,
-        scheduledDays: [...row.scheduledDays].sort((a, b) => a - b),
-        consumptionPercent,
-        overBudget: isExpense && row.actualAmountCents > row.plannedAmountCents,
-      };
-    })
-    .sort((a, b) => {
-      const aExpense = isExpenseStatsRow(a);
-      const bExpense = isExpenseStatsRow(b);
-      if (aExpense !== bExpense) {
-        return aExpense ? -1 : 1;
-      }
-      return b.consumptionPercent - a.consumptionPercent || a.categoryName.localeCompare(b.categoryName, 'fr');
-    });
-}
 
 export function ForecastPanel({
   subAccountId,
@@ -639,42 +558,42 @@ export function ForecastPanel({
               <div className="grid h-full min-h-64 grid-cols-2 gap-3 sm:grid-cols-3 sm:grid-rows-2">
                 <StatCard
                   label="Début de mois"
-                  hint="Solde au 1er du mois"
+                  hint="Solde au 1er (date d’opération)"
                   icon="event"
                   tone="muted"
                   value={stats.balances.openingCents}
                 />
                 <StatCard
-                  label="Projeté budget"
-                  hint="Si tout le plan est tenu"
+                  label="Si budget tenu"
+                  hint="Début + plan complet"
                   icon="calendar_month"
                   tone="accent"
                   value={stats.balances.projectedBudgetCents}
                 />
                 <StatCard
-                  label="Projeté réaliste"
-                  hint="Réalisé + reste planifié"
+                  label="Fin estimée"
+                  hint="Réalisé + reste du plan"
                   icon="trending_up"
                   tone="accent"
                   value={stats.balances.projectedRealisticCents}
                 />
                 <StatCard
-                  label="Solde actuel"
-                  hint="À ce jour, hors en attente"
+                  label="Solde pointé"
+                  hint="Confirmé à ce jour (date effective)"
                   icon="account_balance_wallet"
                   tone="brand"
                   value={stats.balances.currentCents}
                 />
                 <StatCard
-                  label="Fin de mois"
-                  hint="Réalisé depuis le 1er"
+                  label="Solde réalisé"
+                  hint="Début + opérations du mois"
                   icon="flag"
                   tone="success"
                   value={stats.balances.endOfMonthActualCents}
                 />
                 <StatCard
-                  label="Écart"
-                  hint="Budget − réalisé (net)"
+                  label="Écart au plan"
+                  hint="Plan − réalisé (net)"
                   icon="compare_arrows"
                   tone="variance"
                   value={stats.balances.varianceBudgetVsActualNetCents}
@@ -684,6 +603,7 @@ export function ForecastPanel({
                 <BalanceTimelineChart
                   points={stats.timeline}
                   daysElapsed={stats.meta.daysElapsed}
+                  categoryBars={toCategoryBars(aggregatedCategories)}
                   className="min-h-64 lg:h-full"
                 />
               ) : (
