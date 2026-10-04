@@ -20,11 +20,11 @@ Module/Security/
   Exception
 ```
 
-Un nouveau sujet (comptes, événements) devient un nouveau dossier `Module/`, avec le même découpage, seulement les couches utiles. On n'ajoute pas d'interface s'il n'y a qu'un appelant local et pas de seconde implémentation prévue.
+Un nouveau sujet (comptes, travail, événements) devient un nouveau dossier `Module/`, avec le même découpage, seulement les couches utiles. On n'ajoute pas d'interface s'il n'y a qu'un appelant local et pas de seconde implémentation prévue.
 
 Doctrine mappe explicitement `Domain/Entity`. Les DTO ne sont pas des entités.
 
-API Platform sert les ressources et la doc OpenAPI. Les points d'entrée techniques (`/api/login`, `/api/me`) et les modules métier v1 (`/api/accounts`, `/api/categories`, …) restent des contrôleurs Symfony JSON.
+API Platform sert les ressources et la doc OpenAPI. Les points d'entrée techniques (`/api/login`, `/api/me`) et les modules métier v1 (`/api/accounts`, `/api/categories`, `/api/workers`, …) restent des contrôleurs Symfony JSON.
 
 ## Modules métier (v1)
 
@@ -32,6 +32,7 @@ API Platform sert les ressources et la doc OpenAPI. Les points d'entrée techniq
 - **`Module/Category`** — catégories (icône, couleur, kind) scopées à l’utilisateur ; **enseignes liées** (`merchantIds`) et **favori** optionnel (`favoriteMerchantId`, auto si une seule enseigne)
 - **`Module/Merchant`** — enseignes (label, couleur, **icône XOR image**) scopées à l’utilisateur ; **catégories liées** (`categoryIds`) ; image stockée sous `var/uploads` (gzip) et servie décompressée via endpoint JWT
 - **`Module/Account`** — comptes → sous-comptes → transactions (`ledger_transaction`), solde en centimes, **forecasts mensuels** (`monthly_forecast` / `forecast_line`) ; enseigne et pièce jointe **optionnelles** sur une opération (photo/PDF sous `var/uploads` en gzip, download JWT décompressé). À la saisie, le choix d’une catégorie préremplit l’enseigne favorite ; le select enseigne liste d’abord les liées. `GET /api/sub-accounts/{id}/transactions?limit=&offset=` renvoie le relevé **plus récent en premier**, avec `hasMore` / `nextOffset` et `balanceAfterCents` cohérents page par page. Avec `categoryId` + `yearMonth` (ensemble), même endpoint filtre par catégorie et mois (`operationDate`), ordre chronologique, sans pagination ni solde courant.
+- **`Module/Work`** — travailleurs (`work_worker`) → emplois (`work_job`, dont `week_template` / `work_days_mask`) → documents (`work_document`), **planning** (`work_plan_entry` / `work_plan_segment`), pointages (`work_time_entry` / `work_time_segment`) et raccourcis (`work_time_shortcut`). Plusieurs profils sous l’utilisateur ; temps en minutes, montants en centimes ; estimation nette locale (cotisations + PAS) via `IGrossToNetEstimator` ; uploads `work-documents/{ownerId}/`. Endpoints : `/api/workers`, `/api/jobs/{id}`, documents, `time-entries`, `plan-entries` (+ `fill-month` via semaine type), `time-stats` (prévu + réel, `weeks[]` avec HS vs 35h et vs contrat), `GET /api/work-stats/dashboard?yearMonth=`, raccourcis, `suggest-contribution-rate`.
 
 Montants absolus à la saisie ; le signe (+ crédit / − débit) est dérivé du type de catégorie (`expense` / `income`). Pour une catégorie `both`, le client envoie aussi `flow`.
 
@@ -70,7 +71,7 @@ front/app/
   constants/      routes, statuts, clés
   hooks/
   layouts/        shell, barre, navigation
-  modules/        un dossier par domaine (comptes, événements)
+  modules/        un dossier par domaine (comptes, travail, événements)
   pages/          écrans transverses (accueil, connexion, paramètres)
   routes/         fichiers minces, sans logique
   security/       gardes
@@ -89,4 +90,4 @@ Chaque route exporte `meta()` avec `appTitle(…)` (`Partie · Life Manager`). L
 
 Chaque personne a son compte. Les données d'un module futur appartiennent à l’utilisateur connecté. Un foyer ou un espace partagé n'est pas dans ce socle.
 
-Les fichiers uploadés (logos, pièces jointes) passent par `LocalUploadStorage` : compression **gzip** à l’écriture sous `var/uploads` (`*.{ext}.gz`), décompression transparente à la lecture HTTP. Les anciens fichiers non compressés restent servis tels quels.
+Les fichiers uploadés (logos, pièces jointes, documents travail) passent par `LocalUploadStorage` : compression **gzip** à l’écriture sous `var/uploads` (`*.{ext}.gz`), décompression transparente à la lecture HTTP. Sous-dossiers : `transactions/`, `merchants/`, `work-documents/`. Les anciens fichiers non compressés restent servis tels quels.
