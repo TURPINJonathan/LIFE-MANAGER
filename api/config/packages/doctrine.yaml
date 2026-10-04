@@ -38,6 +38,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Module/Account/Domain/Entity'
                 prefix: 'App\Module\Account\Domain\Entity'
                 alias: Account
+            Work:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Work/Domain/Entity'
+                prefix: 'App\Module\Work\Domain\Entity'
+                alias: Work
 
 when@prod:
     doctrine:
