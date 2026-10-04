@@ -140,7 +140,9 @@ final class WorkDashboardManager
 
             $workerPayloads[] = [
                 'id'                     => (string) $worker->getId(),
-                'displayName'            => $worker->getDisplayName(),
+                'firstName'              => $worker->getFirstName(),
+                'lastName'               => $worker->getLastName(),
+                'fullName'               => $worker->getFullName(),
                 'notes'                  => $worker->getNotes(),
                 'plannedMinutes'         => $workerPlanned,
                 'actualMinutes'          => $workerActual,

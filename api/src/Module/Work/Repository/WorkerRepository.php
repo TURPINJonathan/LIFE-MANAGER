@@ -40,7 +40,8 @@ class WorkerRepository extends ServiceEntityRepository
             ->andWhere('w.owner = :owner')
             ->setParameter('owner', $owner)
             ->orderBy('w.position', 'ASC')
-            ->addOrderBy('w.displayName', 'ASC');
+            ->addOrderBy('w.lastName', 'ASC')
+            ->addOrderBy('w.firstName', 'ASC');
 
         if (!$includeArchived) {
             $qb->andWhere('w.archivedAt IS NULL');

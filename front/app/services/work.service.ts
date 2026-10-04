@@ -36,7 +36,7 @@ export async function listWorkers(token: string): Promise<Worker[]> {
 
 export async function createWorker(
   token: string,
-  body: { displayName: string; notes?: string | null; position?: number },
+  body: { firstName: string; lastName?: string; notes?: string | null; position?: number },
 ): Promise<Worker> {
   const response = await apiFetch('/api/workers', { method: 'POST', body: JSON.stringify(body) }, token);
   if (!response.ok) {
@@ -48,7 +48,7 @@ export async function createWorker(
 export async function updateWorker(
   token: string,
   id: string,
-  body: Partial<{ displayName: string; notes: string | null; position: number }>,
+  body: Partial<{ firstName: string; lastName: string; notes: string | null; position: number }>,
 ): Promise<Worker> {
   const response = await apiFetch(`/api/workers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }, token);
   if (!response.ok) {
@@ -300,4 +300,33 @@ export async function fetchWorkDashboard(token: string, yearMonth: string): Prom
     return parseError(response, 'Impossible de charger le tableau de bord travail.');
   }
   return readJson<WorkDashboard>(response);
+}
+
+export type TimesheetPdfKind = 'filled' | 'blank';
+
+export async function fetchTimesheetPdf(
+  token: string,
+  jobId: string,
+  yearMonth: string,
+  kind: TimesheetPdfKind = 'filled',
+): Promise<{ blob: Blob; filename: string }> {
+  const path =
+    kind === 'blank'
+      ? `/api/jobs/${jobId}/timesheet-blank.pdf?yearMonth=${encodeURIComponent(yearMonth)}`
+      : `/api/jobs/${jobId}/timesheet.pdf?yearMonth=${encodeURIComponent(yearMonth)}`;
+  const response = await apiFetch(path, { method: 'GET', headers: { Accept: 'application/pdf' } }, token);
+  if (!response.ok) {
+    return parseError(
+      response,
+      kind === 'blank'
+        ? 'Impossible de générer le pointage vierge.'
+        : 'Impossible de générer la feuille d’heures.',
+    );
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  const match = /filename="([^"]+)"/i.exec(disposition);
+  const filename =
+    match?.[1] ?? (kind === 'blank' ? `pointage-vierge-${yearMonth}.pdf` : `feuille-heures-${yearMonth}.pdf`);
+  return { blob, filename };
 }

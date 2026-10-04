@@ -23,7 +23,9 @@ export type WorkJobSummary = {
 
 export type Worker = {
   id: string;
-  displayName: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
   notes: string | null;
   position: number;
   archivedAt: string | null;
@@ -34,7 +36,9 @@ export type Worker = {
 export type WorkJob = {
   id: string;
   workerId: string;
-  workerDisplayName: string;
+  workerFirstName: string;
+  workerLastName: string;
+  workerFullName: string;
   title: string;
   companyName: string;
   companySiret: string | null;
@@ -188,7 +192,9 @@ export type WorkDashboardJobRow = {
 
 export type WorkDashboardWorker = {
   id: string;
-  displayName: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
   notes: string | null;
   plannedMinutes: number;
   actualMinutes: number;

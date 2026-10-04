@@ -276,7 +276,7 @@ export function WorkPage() {
                   )}
                 >
                   <div className="flex items-baseline justify-between gap-2">
-                    <p className="truncate text-control font-semibold">{worker.displayName}</p>
+                    <p className="truncate text-control font-semibold">{worker.fullName}</p>
                     <p className="shrink-0 text-[11px] tabular-nums text-fg-muted">
                       {formatMinutes(worker.actualMinutes)}
                     </p>

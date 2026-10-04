@@ -61,7 +61,7 @@ export function WeekTemplateDialog({
     <Dialog isOpen={isOpen} onClose={onClose} title="Semaine type" icon="date_range" size={DIALOG_SIZE.large}>
       <div className="mt-2 flex flex-col gap-4">
         <p className="text-control text-fg-muted">
-          Définissez les jours et horaires habituels. « Remplir le mois » reprendra cette semaine.
+          Définissez les jours et horaires habituels de cet emploi. « Remplir » le planning reprendra cette semaine.
         </p>
         <p className="text-control tabular-nums text-fg-secondary">
           Total hebdo : <strong className="text-fg-primary">{formatMinutes(weeklyMinutes)}</strong>

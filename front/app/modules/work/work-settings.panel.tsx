@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import {
@@ -26,9 +26,11 @@ import {
   updateWorker,
 } from '@services';
 import { useAuthStore } from '@store';
-import type { WorkJob, Worker } from '@app-types';
+import type { WeekTemplate, WorkJob, Worker } from '@app-types';
 import { centsToInput, cn, parseEurosToCents, toastFromError, toastInfo, toastSuccess, todayIsoLocal } from '@utils';
 
+import { segmentSpanMinutes } from './work-day-dialog.component';
+import { defaultWeekTemplate, WeekTemplateDialog } from './week-template-dialog.component';
 import {
   CONTRACT_TYPE_LABELS,
   bpsToPercentInput,
@@ -38,7 +40,7 @@ import {
   percentInputToBps,
 } from './work.utils';
 
-type WorkerForm = { displayName: string; notes: string };
+type WorkerForm = { firstName: string; lastName: string; notes: string };
 type JobForm = {
   title: string;
   companyName: string;
@@ -65,10 +67,21 @@ export function WorkSettingsPanel() {
   const [workerDialog, setWorkerDialog] = useState<'create' | Worker | null>(null);
   const [jobDialog, setJobDialog] = useState<{ worker: Worker; job?: WorkJob } | null>(null);
   const [hourlyAmount, setHourlyAmount] = useState('');
+  const [weekDraft, setWeekDraft] = useState<WeekTemplate>(() => defaultWeekTemplate());
+  const [weekDialogOpen, setWeekDialogOpen] = useState(false);
   const [pendingArchive, setPendingArchive] = useState<PendingArchive | null>(null);
   const [archiveBusy, setArchiveBusy] = useState(false);
 
-  const workerForm = useForm<WorkerForm>({ defaultValues: { displayName: '', notes: '' } });
+  const weekDraftMinutes = useMemo(
+    () =>
+      weekDraft.reduce(
+        (sum, day) => sum + (day.enabled ? segmentSpanMinutes(day.segments, day.pauseMinutes) : 0),
+        0,
+      ),
+    [weekDraft],
+  );
+
+  const workerForm = useForm<WorkerForm>({ defaultValues: { firstName: '', lastName: '', notes: '' } });
   const jobForm = useForm<JobForm>({
     defaultValues: {
       title: '',
@@ -107,6 +120,8 @@ export function WorkSettingsPanel() {
 
   const openJobCreate = (worker: Worker) => {
     setHourlyAmount('');
+    setWeekDraft(defaultWeekTemplate());
+    setWeekDialogOpen(false);
     jobForm.reset({
       title: '',
       companyName: '',
@@ -130,6 +145,8 @@ export function WorkSettingsPanel() {
     try {
       const job = await getJob(token, jobId);
       setHourlyAmount(centsToInput(job.grossHourlyRateCents));
+      setWeekDraft(job.weekTemplate ?? defaultWeekTemplate(job.workDaysMask));
+      setWeekDialogOpen(false);
       jobForm.reset({
         title: job.title,
         companyName: job.companyName,
@@ -155,11 +172,16 @@ export function WorkSettingsPanel() {
     if (!token || !workerDialog) return;
     try {
       if (workerDialog === 'create') {
-        await createWorker(token, { displayName: values.displayName, notes: values.notes || null });
+        await createWorker(token, {
+          firstName: values.firstName,
+          lastName: values.lastName,
+          notes: values.notes || null,
+        });
         toastSuccess('Travailleur créé.');
       } else {
         await updateWorker(token, workerDialog.id, {
-          displayName: values.displayName,
+          firstName: values.firstName,
+          lastName: values.lastName,
           notes: values.notes || null,
         });
         toastSuccess('Travailleur mis à jour.');
@@ -188,6 +210,7 @@ export function WorkSettingsPanel() {
       overtimeRateBps: percentInputToBps(values.overtimeRatePercent),
       employeeContributionRateBps: percentInputToBps(values.contributionPercent),
       pasRateBps: percentInputToBps(values.pasPercent),
+      weekTemplate: weekDraft,
       color: PRESET_COLORS[2] ?? '#3F6F5E',
       icon: 'work',
     };
@@ -234,7 +257,7 @@ export function WorkSettingsPanel() {
           fullWidth={false}
           className="h-11 w-auto px-4"
           onClick={() => {
-            workerForm.reset({ displayName: '', notes: '' });
+            workerForm.reset({ firstName: '', lastName: '', notes: '' });
             setWorkerDialog('create');
           }}
         >
@@ -262,7 +285,7 @@ export function WorkSettingsPanel() {
           {workers.map((worker) => (
             <SectionCard
               key={worker.id}
-              title={worker.displayName}
+              title={worker.fullName}
               icon="person"
               headerAction={
                 <div className="relative z-10 flex gap-1">
@@ -271,7 +294,11 @@ export function WorkSettingsPanel() {
                     icon="edit"
                     aria-label="Modifier le travailleur"
                     onClick={() => {
-                      workerForm.reset({ displayName: worker.displayName, notes: worker.notes ?? '' });
+                      workerForm.reset({
+                        firstName: worker.firstName,
+                        lastName: worker.lastName,
+                        notes: worker.notes ?? '',
+                      });
                       setWorkerDialog(worker);
                     }}
                   />
@@ -279,7 +306,7 @@ export function WorkSettingsPanel() {
                     variant={ICON_BUTTON_VARIANT.danger}
                     icon="delete"
                     aria-label="Archiver le travailleur"
-                    onClick={() => setPendingArchive({ type: 'worker', id: worker.id, label: worker.displayName })}
+                    onClick={() => setPendingArchive({ type: 'worker', id: worker.id, label: worker.fullName })}
                   />
                 </div>
               }
@@ -341,13 +368,24 @@ export function WorkSettingsPanel() {
         icon="person"
       >
         <form className="mt-4 flex flex-col gap-4" onSubmit={submitWorker}>
-          <FormField label="Nom affiché" htmlFor="set-worker-name">
-            <input
-              id="set-worker-name"
-              className={FIELD_CONTROL_CLASSES}
-              {...workerForm.register('displayName', { required: true })}
-            />
-          </FormField>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Prénom" htmlFor="set-worker-first-name">
+              <input
+                id="set-worker-first-name"
+                className={FIELD_CONTROL_CLASSES}
+                autoComplete="given-name"
+                {...workerForm.register('firstName', { required: true })}
+              />
+            </FormField>
+            <FormField label="Nom" htmlFor="set-worker-last-name">
+              <input
+                id="set-worker-last-name"
+                className={FIELD_CONTROL_CLASSES}
+                autoComplete="family-name"
+                {...workerForm.register('lastName')}
+              />
+            </FormField>
+          </div>
           <FormField label="Notes" htmlFor="set-worker-notes" hint="Optionnel">
             <textarea
               id="set-worker-notes"
@@ -369,8 +407,11 @@ export function WorkSettingsPanel() {
 
       <Dialog
         isOpen={jobDialog !== null}
-        onClose={() => setJobDialog(null)}
-        title={jobDialog?.job ? 'Modifier l’emploi' : `Nouvel emploi · ${jobDialog?.worker.displayName ?? ''}`}
+        onClose={() => {
+          setWeekDialogOpen(false);
+          setJobDialog(null);
+        }}
+        title={jobDialog?.job ? 'Modifier l’emploi' : `Nouvel emploi · ${jobDialog?.worker.fullName ?? ''}`}
         icon="work"
       >
         <form className="mt-4 flex flex-col gap-3" onSubmit={submitJob}>
@@ -457,11 +498,38 @@ export function WorkSettingsPanel() {
               Suggérer cotisations
             </Button>
           ) : null}
+          <div className="rounded-control border border-border-subtle bg-page p-3 dark:bg-elevated">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-body font-medium text-fg-primary">Semaine type</p>
+                <p className="text-control text-fg-muted">
+                  {formatMinutes(weekDraftMinutes)} / sem. · utilisée pour « Remplir » le planning
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant={BUTTON_VARIANT.secondary}
+                fullWidth={false}
+                className="h-10 w-auto shrink-0 px-3"
+                onClick={() => setWeekDialogOpen(true)}
+              >
+                <Icon name="date_range" className="text-icon-sm" />
+                Configurer
+              </Button>
+            </div>
+          </div>
           <FormField label="Notes" htmlFor="sj-notes">
             <textarea id="sj-notes" rows={2} className={FIELD_CONTROL_CLASSES} {...jobForm.register('notes')} />
           </FormField>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant={BUTTON_VARIANT.dangerOutline} onClick={() => setJobDialog(null)}>
+            <Button
+              type="button"
+              variant={BUTTON_VARIANT.dangerOutline}
+              onClick={() => {
+                setWeekDialogOpen(false);
+                setJobDialog(null);
+              }}
+            >
               Annuler
             </Button>
             <Button type="submit" variant={BUTTON_VARIANT.success}>
@@ -470,6 +538,14 @@ export function WorkSettingsPanel() {
           </div>
         </form>
       </Dialog>
+
+      <WeekTemplateDialog
+        isOpen={weekDialogOpen}
+        onClose={() => setWeekDialogOpen(false)}
+        value={weekDraft}
+        onChange={setWeekDraft}
+        onSave={() => setWeekDialogOpen(false)}
+      />
 
       <ConfirmDialog
         isOpen={pendingArchive !== null}

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Module\Work\Controller;
 
+use App\Module\Work\Exception\InvalidWorkException;
 use App\Module\Work\Exception\WorkerNotFoundException;
 use App\Module\Work\Service\WorkerManager;
 use App\Shared\Http\JsonRequest;
@@ -29,11 +30,16 @@ final class WorkerController extends AbstractController
     public function create(Request $request): JsonResponse
     {
         $data = JsonRequest::body($request);
-        $payload = $this->workers->createWorker([
-            'displayName' => JsonRequest::requireString($data, 'displayName'),
-            'notes'       => JsonRequest::optionalString($data, 'notes'),
-            'position'    => isset($data['position']) && \is_int($data['position']) ? $data['position'] : 0,
-        ]);
+        try {
+            $payload = $this->workers->createWorker([
+                'firstName' => JsonRequest::requireString($data, 'firstName'),
+                'lastName'  => \is_string($data['lastName'] ?? null) ? trim($data['lastName']) : '',
+                'notes'     => JsonRequest::optionalString($data, 'notes'),
+                'position'  => isset($data['position']) && \is_int($data['position']) ? $data['position'] : 0,
+            ]);
+        } catch (InvalidWorkException $e) {
+            return JsonRequest::error($e, Response::HTTP_BAD_REQUEST);
+        }
 
         return new JsonResponse($payload, Response::HTTP_CREATED);
     }
@@ -53,8 +59,11 @@ final class WorkerController extends AbstractController
     {
         $data = JsonRequest::body($request);
         $patch = [];
-        if (isset($data['displayName'])) {
-            $patch['displayName'] = JsonRequest::requireString($data, 'displayName');
+        if (isset($data['firstName'])) {
+            $patch['firstName'] = JsonRequest::requireString($data, 'firstName');
+        }
+        if (\array_key_exists('lastName', $data)) {
+            $patch['lastName'] = \is_string($data['lastName']) ? trim($data['lastName']) : '';
         }
         if (\array_key_exists('notes', $data)) {
             $patch['notes'] = JsonRequest::optionalString($data, 'notes');
@@ -67,6 +76,8 @@ final class WorkerController extends AbstractController
             return new JsonResponse($this->workers->updateWorker($id, $patch));
         } catch (WorkerNotFoundException $e) {
             return JsonRequest::error($e, Response::HTTP_NOT_FOUND);
+        } catch (InvalidWorkException $e) {
+            return JsonRequest::error($e, Response::HTTP_BAD_REQUEST);
         }
     }
 

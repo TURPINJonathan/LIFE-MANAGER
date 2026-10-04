@@ -160,7 +160,9 @@ final class JobManager
         return [
             'id'                             => (string) $job->getId(),
             'workerId'                       => (string) $worker->getId(),
-            'workerDisplayName'              => $worker->getDisplayName(),
+            'workerFirstName'                => $worker->getFirstName(),
+            'workerLastName'                 => $worker->getLastName(),
+            'workerFullName'                 => $worker->getFullName(),
             'title'                          => $job->getTitle(),
             'companyName'                    => $job->getCompanyName(),
             'companySiret'                   => $job->getCompanySiret(),

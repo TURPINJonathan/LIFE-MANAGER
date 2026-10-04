@@ -7,6 +7,7 @@ namespace App\Module\Work\Service;
 use App\Module\Security\Contract\Service\ICurrentUserAccessor;
 use App\Module\Work\Domain\Entity\Job;
 use App\Module\Work\Domain\Entity\Worker;
+use App\Module\Work\Exception\InvalidWorkException;
 use App\Module\Work\Exception\WorkerNotFoundException;
 use App\Module\Work\Repository\JobRepository;
 use App\Module\Work\Repository\WorkerRepository;
@@ -44,15 +45,22 @@ final class WorkerManager
     }
 
     /**
-     * @param array{displayName: string, notes?: ?string, position?: int} $data
+     * @param array{firstName: string, lastName?: string, notes?: ?string, position?: int} $data
      *
      * @return array<string, mixed>
      */
     public function createWorker(array $data): array
     {
+        $firstName = trim((string) $data['firstName']);
+        if ('' === $firstName) {
+            throw new InvalidWorkException('Le champ "firstName" est requis.');
+        }
+        $lastName = trim((string) ($data['lastName'] ?? ''));
+
         $worker = new Worker(
             $this->users->requireUser(),
-            $data['displayName'],
+            $firstName,
+            $lastName,
             $data['notes'] ?? null,
             $data['position'] ?? 0,
         );
@@ -62,15 +70,22 @@ final class WorkerManager
     }
 
     /**
-     * @param array{displayName?: string, notes?: ?string, position?: int} $data
+     * @param array{firstName?: string, lastName?: string, notes?: ?string, position?: int} $data
      *
      * @return array<string, mixed>
      */
     public function updateWorker(string $id, array $data): array
     {
         $worker = $this->requireWorker($id);
-        if (isset($data['displayName'])) {
-            $worker->setDisplayName($data['displayName']);
+        if (isset($data['firstName'])) {
+            $firstName = trim((string) $data['firstName']);
+            if ('' === $firstName) {
+                throw new InvalidWorkException('Le champ "firstName" est requis.');
+            }
+            $worker->setFirstName($firstName);
+        }
+        if (\array_key_exists('lastName', $data)) {
+            $worker->setLastName(trim((string) $data['lastName']));
         }
         if (\array_key_exists('notes', $data)) {
             $worker->setNotes($data['notes']);
@@ -128,13 +143,15 @@ final class WorkerManager
         }
 
         return [
-            'id'          => (string) $worker->getId(),
-            'displayName' => $worker->getDisplayName(),
-            'notes'       => $worker->getNotes(),
-            'position'    => $worker->getPosition(),
-            'archivedAt'  => $worker->getArchivedAt()?->format(\DateTimeInterface::ATOM),
-            'createdAt'   => $worker->getCreatedAt()->format(\DateTimeInterface::ATOM),
-            'jobs'        => $jobs,
+            'id'         => (string) $worker->getId(),
+            'firstName'  => $worker->getFirstName(),
+            'lastName'   => $worker->getLastName(),
+            'fullName'   => $worker->getFullName(),
+            'notes'      => $worker->getNotes(),
+            'position'   => $worker->getPosition(),
+            'archivedAt' => $worker->getArchivedAt()?->format(\DateTimeInterface::ATOM),
+            'createdAt'  => $worker->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'jobs'       => $jobs,
         ];
     }
 

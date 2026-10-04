@@ -27,7 +27,10 @@ class Worker
     private User $owner;
 
     #[ORM\Column(length: 160)]
-    private string $displayName;
+    private string $firstName;
+
+    #[ORM\Column(length: 160)]
+    private string $lastName;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $notes = null;
@@ -46,11 +49,17 @@ class Worker
     #[ORM\OrderBy(['position' => 'ASC', 'title' => 'ASC'])]
     private Collection $jobs;
 
-    public function __construct(User $owner, string $displayName, ?string $notes = null, int $position = 0)
-    {
+    public function __construct(
+        User $owner,
+        string $firstName,
+        string $lastName = '',
+        ?string $notes = null,
+        int $position = 0,
+    ) {
         $this->id = Uuid::v7();
         $this->owner = $owner;
-        $this->displayName = trim($displayName);
+        $this->firstName = trim($firstName);
+        $this->lastName = trim($lastName);
         $this->notes = null !== $notes && '' !== trim($notes) ? trim($notes) : null;
         $this->position = $position;
         $this->createdAt = new \DateTimeImmutable();
@@ -67,14 +76,30 @@ class Worker
         return $this->owner;
     }
 
-    public function getDisplayName(): string
+    public function getFirstName(): string
     {
-        return $this->displayName;
+        return $this->firstName;
     }
 
-    public function setDisplayName(string $displayName): void
+    public function setFirstName(string $firstName): void
     {
-        $this->displayName = trim($displayName);
+        $this->firstName = trim($firstName);
+    }
+
+    public function getLastName(): string
+    {
+        return $this->lastName;
+    }
+
+    public function setLastName(string $lastName): void
+    {
+        $this->lastName = trim($lastName);
+    }
+
+    /** Libellé d’affichage « Prénom Nom ». */
+    public function getFullName(): string
+    {
+        return trim($this->firstName.' '.$this->lastName);
     }
 
     public function getNotes(): ?string
