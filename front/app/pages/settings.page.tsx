@@ -10,12 +10,14 @@ import {
 import { AccountsSettingsPanel } from '@accounts';
 import { CategoriesSettingsPanel } from '@categories';
 import { MerchantsSettingsPanel } from '@merchants';
+import { WorkSettingsPanel } from '@work';
 import { useAuthStore } from '@store';
 import { cn } from '@utils';
 
 const SECTIONS = [
   { id: 'profil', label: 'Profil', icon: 'person', description: 'Identité du compte' },
   { id: 'comptes', label: 'Comptes', icon: 'account_balance', description: 'Groupes et sous-comptes' },
+  { id: 'travail', label: 'Travail', icon: 'work', description: 'Travailleurs et emplois' },
   { id: 'categories', label: 'Catégories', icon: 'category', description: 'Classement des opérations' },
   { id: 'enseignes', label: 'Enseignes', icon: 'storefront', description: 'Commerces et logos' },
 ] as const;
@@ -110,6 +112,7 @@ export function SettingsPage() {
             </SectionCard>
           )}
           {section === 'comptes' && <AccountsSettingsPanel />}
+          {section === 'travail' && <WorkSettingsPanel />}
           {section === 'categories' && <CategoriesSettingsPanel />}
           {section === 'enseignes' && <MerchantsSettingsPanel />}
         </div>

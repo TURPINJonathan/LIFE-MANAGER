@@ -4,6 +4,9 @@ export const APP_ROUTE = {
   accounts: '/comptes',
   accountLedger: '/comptes/:subAccountId',
   accountNew: '/comptes/nouveau',
+  work: '/travail',
+  workJob: '/travail/:jobId',
+  workNew: '/travail/nouveau',
   events: '/evenements',
   eventNew: '/evenements/nouveau',
   settings: '/parametres',
@@ -26,8 +29,18 @@ export function accountLedgerPath(subAccountId: string, view?: 'operations' | 'b
   return `${base}?vue=budget`;
 }
 
-export function settingsPath(section: 'profil' | 'comptes' | 'categories' | 'enseignes' = 'profil'): string {
+export function settingsPath(
+  section: 'profil' | 'comptes' | 'travail' | 'categories' | 'enseignes' = 'profil',
+): string {
   return `/parametres/${section}`;
+}
+
+export function workJobPath(jobId: string, tab?: 'pointeuse' | 'planning' | 'documents'): string {
+  const base = `/travail/${jobId}`;
+  if (!tab || tab === 'pointeuse') {
+    return base;
+  }
+  return `${base}?onglet=${tab}`;
 }
 
 export function shiftYearMonth(yearMonth: string, delta: number): string {

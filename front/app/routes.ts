@@ -7,7 +7,10 @@ export default [
         index('routes/home.tsx'),
         route('comptes', 'routes/accounts.tsx'),
         route('comptes/:subAccountId', 'routes/account-ledger.tsx'),
+        route('travail', 'routes/work.tsx'),
+        route('travail/:jobId', 'routes/work-job.tsx'),
         route('evenements', 'routes/events.tsx'),
+
         route('parametres', 'routes/settings.tsx', [
           index('routes/settings.index.tsx'),
           route(':section', 'routes/settings.$section.tsx'),

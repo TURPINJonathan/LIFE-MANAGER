@@ -192,6 +192,24 @@
   --focus-ring: 0 0 0 3px rgb(194 65 12 / 20%);
 }
 
+[data-accent='work'] {
+  --bg-page: #f3f6f5;
+  --bg-subtle: #e2ebe7;
+  --border-subtle: #d7e3dd;
+  --accent: #3f6f5e;
+  --accent-hover: #4f8672;
+  --accent-press: #325849;
+  --brand: #243f35;
+  --brand-hover: #325849;
+  --deep: #15241e;
+  --slate: #dce8e2;
+  --accent-tint: #dce8e2;
+  --accent-subtle: rgb(63 111 94 / 12%);
+  --accent-outline: rgb(63 111 94 / 40%);
+  --accent-ghost: rgb(63 111 94 / 10%);
+  --focus-ring: 0 0 0 3px rgb(63 111 94 / 20%);
+}
+
 [data-accent='events'] {
   --bg-page: #f2f8f9;
   --bg-subtle: #ddecef;
@@ -274,6 +292,18 @@ html.dark[data-accent='accounts'] {
   --accent-outline: rgb(251 146 60 / 40%);
   --accent-ghost: rgb(251 146 60 / 12%);
   --focus-ring: 0 0 0 3px rgb(251 146 60 / 25%);
+}
+
+html.dark[data-accent='work'] {
+  --accent: #7eb89f;
+  --accent-hover: #9dccb5;
+  --accent-press: #5f9a80;
+  --brand: #c5e0d2;
+  --accent-tint: rgb(126 184 159 / 16%);
+  --accent-subtle: rgb(126 184 159 / 14%);
+  --accent-outline: rgb(126 184 159 / 40%);
+  --accent-ghost: rgb(126 184 159 / 12%);
+  --focus-ring: 0 0 0 3px rgb(126 184 159 / 25%);
 }
 
 html.dark[data-accent='events'] {

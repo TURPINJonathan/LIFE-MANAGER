@@ -1,8 +1,12 @@
 import { useEffect } from 'react';
 
-/** Pose le titre d’onglet côté client (écrans dynamiques). */
+/** Pose `document.title` côté client (titres dynamiques hors `meta()` de route). */
 export function useDocumentTitle(title: string): void {
   useEffect(() => {
+    const previous = document.title;
     document.title = title;
+    return () => {
+      document.title = previous;
+    };
   }, [title]);
 }

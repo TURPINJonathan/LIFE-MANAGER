@@ -7,6 +7,7 @@ import { APP_ROUTE } from './route.constants';
 export const APP_ACCENT = {
   neutral: 'neutral',
   accounts: 'accounts',
+  work: 'work',
   events: 'events',
   categories: 'categories',
   settings: 'settings',
@@ -22,6 +23,7 @@ export const DEFAULT_ACCENT: AppAccent = APP_ACCENT.neutral;
  */
 export const ROUTE_ACCENT = [
   { prefix: APP_ROUTE.accounts, accent: APP_ACCENT.accounts },
+  { prefix: APP_ROUTE.work, accent: APP_ACCENT.work },
   { prefix: APP_ROUTE.events, accent: APP_ACCENT.events },
   { prefix: APP_ROUTE.settings, accent: APP_ACCENT.settings },
   { prefix: APP_ROUTE.home, accent: APP_ACCENT.neutral },

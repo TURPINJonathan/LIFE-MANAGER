@@ -26,6 +26,7 @@ export {
   currentYearMonth,
   settingsPath,
   shiftYearMonth,
+  workJobPath,
 } from './route.constants';
 export {
   APP_MAIN_SURFACE_CLASSES,
