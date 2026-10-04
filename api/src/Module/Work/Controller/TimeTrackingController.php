@@ -104,6 +104,32 @@ final class TimeTrackingController extends AbstractController
         }
     }
 
+    #[Route('/api/jobs/{jobId}/timesheet.pdf', name: 'api_job_timesheet_pdf', methods: ['GET'])]
+    public function timesheetPdf(string $jobId, Request $request): Response
+    {
+        $yearMonth = (string) $request->query->get('yearMonth', '');
+        try {
+            return $this->time->timesheetPdf($jobId, $yearMonth);
+        } catch (JobNotFoundException $e) {
+            return JsonRequest::error($e, Response::HTTP_NOT_FOUND);
+        } catch (InvalidWorkException $e) {
+            return JsonRequest::error($e, Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    #[Route('/api/jobs/{jobId}/timesheet-blank.pdf', name: 'api_job_timesheet_blank_pdf', methods: ['GET'])]
+    public function timesheetBlankPdf(string $jobId, Request $request): Response
+    {
+        $yearMonth = (string) $request->query->get('yearMonth', '');
+        try {
+            return $this->time->timesheetBlankPdf($jobId, $yearMonth);
+        } catch (JobNotFoundException $e) {
+            return JsonRequest::error($e, Response::HTTP_NOT_FOUND);
+        } catch (InvalidWorkException $e) {
+            return JsonRequest::error($e, Response::HTTP_BAD_REQUEST);
+        }
+    }
+
     #[Route('/api/jobs/{jobId}/time-shortcuts', name: 'api_time_shortcuts_list', methods: ['GET'])]
     public function listShortcuts(string $jobId): JsonResponse
     {

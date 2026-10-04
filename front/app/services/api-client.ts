@@ -14,8 +14,10 @@ function apiUrl(path: string): string {
 
 export async function apiFetch(path: string, init: RequestInit = {}, token?: string | null): Promise<Response> {
   const headers = new Headers(init.headers);
-  headers.set('Accept', 'application/json');
-  if (init.body && !(init.body instanceof FormData)) {
+  if (!headers.has('Accept')) {
+    headers.set('Accept', 'application/json');
+  }
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
   if (token) {

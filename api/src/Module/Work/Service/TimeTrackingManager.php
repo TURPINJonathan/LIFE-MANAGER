@@ -15,6 +15,7 @@ use App\Module\Work\Exception\TimeShortcutNotFoundException;
 use App\Module\Work\Repository\TimeEntryRepository;
 use App\Module\Work\Repository\TimeShortcutRepository;
 use App\Module\Work\Repository\WorkPlanEntryRepository;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
 
 final class TimeTrackingManager
@@ -26,6 +27,7 @@ final class TimeTrackingManager
         private readonly JobManager $jobs,
         private readonly WorkTimeCalculator $calculator,
         private readonly WorkScheduleSupport $schedule,
+        private readonly TimesheetPdfGenerator $timesheetPdf,
         private readonly ICurrentUserAccessor $users,
     ) {
     }
@@ -342,6 +344,49 @@ final class TimeTrackingManager
     public function deleteShortcut(string $id): void
     {
         $this->shortcuts->remove($this->requireShortcut($id));
+    }
+
+    public function timesheetPdf(string $jobId, string $yearMonth): Response
+    {
+        $job = $this->jobs->requireJob($jobId);
+        try {
+            [$from, $to] = $this->calculator->monthBounds($yearMonth);
+        } catch (\InvalidArgumentException $e) {
+            throw new InvalidWorkException($e->getMessage());
+        }
+
+        $entries = $this->entries->listForJobBetween($job, $from, $to);
+        $pdf = $this->timesheetPdf->generate($job, $yearMonth, $entries);
+
+        return $this->pdfResponse($pdf);
+    }
+
+    public function timesheetBlankPdf(string $jobId, string $yearMonth): Response
+    {
+        // Ownership du job (même si la grille ne dépend pas des pointages).
+        $this->jobs->requireJob($jobId);
+        try {
+            $this->calculator->monthBounds($yearMonth);
+        } catch (\InvalidArgumentException $e) {
+            throw new InvalidWorkException($e->getMessage());
+        }
+
+        return $this->pdfResponse($this->timesheetPdf->generateBlank($yearMonth));
+    }
+
+    /**
+     * @param array{binary: string, filename: string} $pdf
+     */
+    private function pdfResponse(array $pdf): Response
+    {
+        $response = new Response($pdf['binary'], Response::HTTP_OK, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => sprintf('inline; filename="%s"', $pdf['filename']),
+            'Cache-Control' => 'private, no-store',
+        ]);
+        $response->headers->set('Content-Length', (string) \strlen($pdf['binary']));
+
+        return $response;
     }
 
     private function requireEntry(string $id): TimeEntry

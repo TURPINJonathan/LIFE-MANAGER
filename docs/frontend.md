@@ -24,9 +24,9 @@ Les utilities de marque (`bg-accent`, `text-brand`, …) sont les mêmes partout
 
 ## Travail
 
-- **`/parametres/travail`** : CRUD travailleurs et emplois (contrat, taux, cotisations, PAS, HS, pointeuse) — comme `/parametres/comptes`.
+- **`/parametres/travail`** : CRUD travailleurs (prénom / nom) et emplois (contrat, taux, cotisations, PAS, HS, pointeuse, **semaine type**) — comme `/parametres/comptes`.
 - **`/travail`** : dashboard mensuel type Comptes (sélecteur de mois, carte synthèse prévu/réel + brut/net, cartes par personne, timeline heures cumulées, alertes HS / sous-heures). Structure via engrenage → paramètres.
-- **`/travail/:jobId`** : chrome type ledger (toggle **Temps** / Documents, nav mois). Un seul calendrier avec **prévu + réel** par jour ; clic → dialog (onglets Prévu / Réel). Synthèse mois brut/net prévu+réel ; **par semaine** : heures, brut/net, HS vs 35h et vs contrat. **Semaine type** pour « Remplir ». Documents : filtre + `ChoiceCards` + confirm. Query `?onglet=` / `?mois=`.
+- **`/travail/:jobId`** : chrome type ledger (toggle **Temps** / Documents, nav mois). Un seul calendrier avec **prévu + réel** par jour ; clic → dialog (onglets Prévu / Réel). Synthèse mois brut/net prévu+réel ; **par semaine** : heures, brut/net, HS vs 35h et vs contrat. « Remplir » applique la **semaine type** définie dans le paramétrage de l’emploi. Export PDF (bouton) : dialog avec choix **feuille d’heures** / **pointage vierge**, aperçu, téléchargement et impression. Documents : filtre + `ChoiceCards` + confirm. Query `?onglet=` / `?mois=`.
 
 ## Comptes, catégories & enseignes
 

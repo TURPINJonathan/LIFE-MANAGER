@@ -42,7 +42,6 @@ import {
   listTimeEntries,
   listTimeShortcuts,
   listWorkDocuments,
-  updateJob,
   uploadWorkDocumentFile,
   upsertPlanEntry,
   upsertTimeEntry,
@@ -54,7 +53,6 @@ import type {
   TimeShortcut,
   TimeStats,
   TimeWeekStats,
-  WeekTemplate,
   WorkDocument,
   WorkDocumentKind,
   WorkJob,
@@ -64,8 +62,8 @@ import { cn, formatCents, formatIsoDateFr, toastFromError, toastInfo, toastSucce
 
 import { WorkDayDialog, type DayLaneDraft } from './work-day-dialog.component';
 import { WorkMonthCalendar } from './work-month-calendar.component';
+import { TimesheetPdfDialog } from './timesheet-pdf-dialog.component';
 import { DEFAULT_DAY_SHORTCUT, formatMinutes, isoWeekNumber } from './work.utils';
-import { defaultWeekTemplate, WeekTemplateDialog } from './week-template-dialog.component';
 
 type TabKey = 'temps' | 'documents';
 type PendingDelete =
@@ -163,9 +161,6 @@ export function JobDetailPage() {
   const [plannedDraft, setPlannedDraft] = useState<DayLaneDraft>(emptyLane);
   const [actualDraft, setActualDraft] = useState<DayLaneDraft>(emptyLane);
 
-  const [weekDialog, setWeekDialog] = useState(false);
-  const [weekDraft, setWeekDraft] = useState<WeekTemplate>(() => defaultWeekTemplate());
-
   const [docDialog, setDocDialog] = useState(false);
   const [docKind, setDocKind] = useState<WorkDocumentKind>('payslip');
   const [docLabel, setDocLabel] = useState('');
@@ -174,6 +169,7 @@ export function JobDetailPage() {
 
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [timesheetOpen, setTimesheetOpen] = useState(false);
 
   const monthLabel = useMemo(() => formatMonthLabel(yearMonth), [yearMonth]);
   const range = useMemo(() => monthRange(yearMonth), [yearMonth]);
@@ -330,32 +326,10 @@ export function JobDetailPage() {
     }
   };
 
-  const openWeekDialog = () => {
-    if (!job) return;
-    setWeekDraft(job.weekTemplate ?? defaultWeekTemplate(job.workDaysMask));
-    setWeekDialog(true);
-  };
-
-  const saveWeekTemplate = async () => {
-    if (!token || !jobId) return;
-    setBusy(true);
-    try {
-      const updated = await updateJob(token, jobId, { weekTemplate: weekDraft });
-      setJob(updated);
-      setWeekDialog(false);
-      toastSuccess('Semaine type enregistrée.');
-    } catch (err) {
-      toastFromError(err, 'Enregistrement impossible.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const fillMonth = async () => {
     if (!token || !jobId || !job) return;
     if (!job.weekTemplate) {
-      toastInfo('Définissez d’abord une semaine type.');
-      openWeekDialog();
+      toastInfo('Définissez d’abord une semaine type dans Paramètres → Travail.');
       return;
     }
     setBusy(true);
@@ -474,7 +448,7 @@ export function JobDetailPage() {
               </Typography>
               <p className="truncate text-control text-fg-secondary">
                 {job.companyName}
-                <span className="text-fg-muted"> · {job.workerDisplayName}</span>
+                <span className="text-fg-muted"> · {job.workerFullName}</span>
               </p>
             </div>
           </div>
@@ -537,12 +511,24 @@ export function JobDetailPage() {
 
             {tab === 'temps' ? (
               <>
-                <Tooltip content="Semaine type">
+                <Tooltip content="Exporter en PDF">
                   <IconButton
                     variant={ICON_BUTTON_VARIANT.ghost}
-                    icon="date_range"
-                    aria-label="Semaine type"
-                    onClick={openWeekDialog}
+                    icon="picture_as_pdf"
+                    aria-label="Exporter en PDF"
+                    onClick={() => setTimesheetOpen(true)}
+                  />
+                </Tooltip>
+                <Tooltip content="Aujourd’hui">
+                  <IconButton
+                    variant={ICON_BUTTON_VARIANT.ghost}
+                    icon="today"
+                    aria-label="Aujourd’hui"
+                    onClick={() => {
+                      const ym = today.slice(0, 7);
+                      if (ym !== yearMonth) setYearMonth(ym);
+                      openDay(today);
+                    }}
                   />
                 </Tooltip>
                 <Button
@@ -556,18 +542,6 @@ export function JobDetailPage() {
                   <Icon name="auto_fix_high" className="text-icon-sm" />
                   <span className="hidden sm:inline">Remplir</span>
                 </Button>
-                <Tooltip content="Aujourd’hui">
-                  <IconButton
-                    variant={ICON_BUTTON_VARIANT.ghost}
-                    icon="today"
-                    aria-label="Aujourd’hui"
-                    onClick={() => {
-                      const ym = today.slice(0, 7);
-                      if (ym !== yearMonth) setYearMonth(ym);
-                      openDay(today);
-                    }}
-                  />
-                </Tooltip>
               </>
             ) : (
               <Button
@@ -763,15 +737,6 @@ export function JobDetailPage() {
         }}
       />
 
-      <WeekTemplateDialog
-        isOpen={weekDialog}
-        onClose={() => setWeekDialog(false)}
-        value={weekDraft}
-        busy={busy}
-        onChange={setWeekDraft}
-        onSave={() => void saveWeekTemplate()}
-      />
-
       <Dialog
         isOpen={docDialog}
         onClose={() => setDocDialog(false)}
@@ -864,6 +829,17 @@ export function JobDetailPage() {
         confirmVariant={BUTTON_VARIANT.danger}
         busy={deleteBusy}
       />
+
+      {token ? (
+        <TimesheetPdfDialog
+          isOpen={timesheetOpen}
+          onClose={() => setTimesheetOpen(false)}
+          token={token}
+          jobId={jobId}
+          yearMonth={yearMonth}
+          monthLabel={monthLabel}
+        />
+      ) : null}
     </div>
   );
 }
