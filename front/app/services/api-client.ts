@@ -7,9 +7,13 @@ export class ApiError extends Error {
   }
 }
 
+/** Base API. Vide = même origine (proxy Vite `/api` en dev) — obligatoire sur téléphone. */
+export function apiBaseUrl(): string {
+  return import.meta.env.VITE_API_URL ?? '';
+}
+
 function apiUrl(path: string): string {
-  const base = import.meta.env.VITE_API_URL ?? 'http://localhost:9100';
-  return `${base}${path}`;
+  return `${apiBaseUrl()}${path}`;
 }
 
 export async function apiFetch(path: string, init: RequestInit = {}, token?: string | null): Promise<Response> {
