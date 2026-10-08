@@ -877,229 +877,234 @@ export function AccountLedgerPage() {
         isOpen={dialogOpen}
         onClose={closeForm}
         title={editing ? 'Modifier l’opération' : 'Nouvelle opération'}
-        size={DIALOG_SIZE.large}
+        size={DIALOG_SIZE.wide}
       >
         <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-4">
-          <FormField label="Désignation" htmlFor="tx-designation">
-            <input
-              id="tx-designation"
-              className={FIELD_CONTROL_CLASSES}
-              placeholder="Ex. Courses Carrefour"
-              {...form.register('designation', { required: true })}
-            />
-          </FormField>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Date d’opération" htmlFor="tx-op">
-              <DateField
-                id="tx-op"
-                value={form.watch('operationDate')}
-                onChange={(next) => form.setValue('operationDate', next, { shouldDirty: true, shouldValidate: true })}
-              />
-              <input type="hidden" {...form.register('operationDate', { required: true })} />
-            </FormField>
-            <FormField
-              label="Date effective"
-              htmlFor="tx-eff"
-              action={
-                form.watch('effectiveDate') ? (
-                  <button
-                    type="button"
-                    className="text-control text-accent hover:underline"
-                    onClick={() => form.setValue('effectiveDate', '', { shouldDirty: true })}
-                  >
-                    Effacer
-                  </button>
-                ) : null
-              }
-            >
-              <DateField
-                id="tx-eff"
-                value={form.watch('effectiveDate')}
-                onChange={(next) => form.setValue('effectiveDate', next, { shouldDirty: true })}
-                placeholder="Optionnel"
-              />
-              <input type="hidden" {...form.register('effectiveDate')} />
-            </FormField>
-          </div>
-
-          <FormField label="Mode de paiement">
-            <ChoiceCards
-              label="Mode de paiement"
-              value={paymentMethod}
-              options={PAYMENT_METHODS.map((method) => ({
-                value: method,
-                label: PAYMENT_METHOD_LABELS[method],
-                icon: PAYMENT_METHOD_ICONS[method],
-              }))}
-              onChange={(method) => form.setValue('paymentMethod', method, { shouldDirty: true })}
-            />
-          </FormField>
-
-          {paymentMethod === 'check' && (
-            <FormField label="N° de chèque" htmlFor="tx-check">
-              <input
-                id="tx-check"
-                className={FIELD_CONTROL_CLASSES}
-                {...form.register('checkNumber', { required: paymentMethod === 'check' })}
-              />
-            </FormField>
-          )}
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Catégorie" htmlFor="tx-category">
-              <Select
-                id="tx-category"
-                label="Catégorie"
-                placeholder="Choisir une catégorie"
-                searchPlaceholder="Rechercher une catégorie…"
-                value={categoryId}
-                onChange={(next) => {
-                  form.setValue('categoryId', next, { shouldDirty: true, shouldValidate: true });
-                  const nextCategory = categories.find((category) => category.id === next);
-                  form.setValue('merchantId', favoriteMerchantIdForCategory(nextCategory), {
-                    shouldDirty: true,
-                  });
-                }}
-                options={buildCategorySelectOptions(categories)}
-                createOption={{
-                  label: 'Nouvelle catégorie',
-                  onCreate: () => setCategoryCreateOpen(true),
-                }}
-              />
-              <input type="hidden" {...form.register('categoryId', { required: true })} />
-            </FormField>
-
-            <FormField label="Enseigne" htmlFor="tx-merchant">
-              <Select
-                id="tx-merchant"
-                label="Enseigne"
-                searchPlaceholder="Rechercher une enseigne…"
-                value={merchantId}
-                onChange={(next) => form.setValue('merchantId', next, { shouldDirty: true })}
-                options={buildMerchantSelectOptions(merchants, selectedCategory ?? undefined)}
-                createOption={{
-                  label: 'Nouvelle enseigne',
-                  onCreate: () => setMerchantCreateOpen(true),
-                }}
-              />
-              <input type="hidden" {...form.register('merchantId')} />
-            </FormField>
-          </div>
-
-          {selectedCategory?.kind === 'both' && (
-            <FormField label="Sens">
-              <ChoiceCards
-                label="Sens"
-                className="grid grid-cols-2 gap-2"
-                value={flow}
-                options={[
-                  { value: 'debit', label: 'Débit (−)', icon: 'arrow_downward' },
-                  { value: 'credit', label: 'Crédit (+)', icon: 'arrow_upward' },
-                ]}
-                onChange={(next) => form.setValue('flow', next, { shouldDirty: true })}
-              />
-            </FormField>
-          )}
-
-          <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
-            <FormField label="Montant" htmlFor="tx-amount" className="flex h-full flex-col">
-              <div className="relative flex min-h-24 flex-1 items-stretch overflow-hidden rounded-control border border-border bg-page transition-[border-color,box-shadow] duration-(--duration-fast) focus-within:border-accent focus-within:shadow-[var(--focus-ring)] hover:border-border-strong dark:bg-elevated">
-                <Controller
-                  name="amount"
-                  control={form.control}
-                  rules={{ required: true }}
-                  render={({ field }) => (
-                    <TpeAmountInput
-                      id="tx-amount"
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      className={cn(
-                        'min-w-0 flex-1 border-0 bg-transparent px-10 py-3 text-center text-[2rem] leading-none font-bold tabular-nums outline-none',
-                        amountToneClass,
-                      )}
-                    />
-                  )}
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]">
+            <div className="flex min-w-0 flex-col gap-4">
+              <FormField label="Désignation" htmlFor="tx-designation">
+                <input
+                  id="tx-designation"
+                  className={FIELD_CONTROL_CLASSES}
+                  placeholder="Ex. Courses Carrefour"
+                  {...form.register('designation', { required: true })}
                 />
-                <span
-                  className={cn(
-                    'pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-[1.75rem] font-semibold tabular-nums',
-                    amountToneClass,
-                  )}
-                  aria-hidden="true"
-                >
-                  €
-                </span>
-              </div>
-            </FormField>
+              </FormField>
 
-            <FormField label="Pièce jointe" htmlFor="tx-attachment-file" className="flex h-full flex-col">
-              {showExistingAttachment ? (
-                <div className="flex min-h-24 flex-1 items-center gap-2 rounded-control border border-border-subtle bg-elevated/50 px-3 py-2.5 text-control text-fg-secondary">
-                  <Icon name="attach_file" className="text-icon-sm shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">{editing?.attachmentOriginalName ?? 'Pièce jointe'}</span>
-                  <button
-                    type="button"
-                    className="shrink-0 text-accent hover:underline"
-                    onClick={() => setRemoveAttachment(true)}
-                  >
-                    Retirer
-                  </button>
-                </div>
-              ) : (
-                <div
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Ajouter une photo ou un fichier"
-                  onClick={() => attachmentInputRef.current?.click()}
-                  onKeyDown={onAttachmentDropzoneKeyDown}
-                  onDragOver={onAttachmentDragOver}
-                  onDragEnter={onAttachmentDragOver}
-                  onDragLeave={onAttachmentDragLeave}
-                  onDrop={onAttachmentDrop}
-                  className={cn(
-                    'flex min-h-24 flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-control border border-dashed px-4 py-4 transition-colors',
-                    attachmentDragging
-                      ? 'border-accent bg-accent-tint/40'
-                      : 'border-border-subtle bg-elevated/40 hover:border-accent/60',
-                  )}
-                >
-                  {attachmentFile ? (
-                    <div className="flex w-full items-center gap-2 text-left">
-                      <Icon name="attach_file" className="text-icon shrink-0 text-accent" />
-                      <span className="min-w-0 flex-1 truncate text-control text-fg-secondary">
-                        {attachmentFile.name}
-                      </span>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField label="Date d’opération" htmlFor="tx-op">
+                  <DateField
+                    id="tx-op"
+                    value={form.watch('operationDate')}
+                    onChange={(next) => form.setValue('operationDate', next, { shouldDirty: true, shouldValidate: true })}
+                  />
+                  <input type="hidden" {...form.register('operationDate', { required: true })} />
+                </FormField>
+                <FormField
+                  label="Date effective"
+                  htmlFor="tx-eff"
+                  action={
+                    form.watch('effectiveDate') ? (
                       <button
                         type="button"
-                        className="shrink-0 text-control text-accent hover:underline"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          pickAttachment(null);
-                        }}
+                        className="text-control text-accent hover:underline"
+                        onClick={() => form.setValue('effectiveDate', '', { shouldDirty: true })}
                       >
-                        Retirer
+                        Effacer
                       </button>
-                    </div>
-                  ) : (
-                    <>
-                      <Icon name="upload_file" className="text-3xl text-fg-muted" />
-                      <p className="m-0 text-center text-control text-fg-secondary">Photo ou PDF</p>
-                    </>
-                  )}
-                  <input
-                    ref={attachmentInputRef}
-                    id="tx-attachment-file"
-                    type="file"
-                    accept={ATTACHMENT_ACCEPT}
-                    className="sr-only"
-                    onChange={onAttachmentChange}
-                    onClick={(event) => event.stopPropagation()}
+                    ) : null
+                  }
+                >
+                  <DateField
+                    id="tx-eff"
+                    value={form.watch('effectiveDate')}
+                    onChange={(next) => form.setValue('effectiveDate', next, { shouldDirty: true })}
+                    placeholder="Optionnel"
                   />
-                </div>
+                  <input type="hidden" {...form.register('effectiveDate')} />
+                </FormField>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField label="Catégorie" htmlFor="tx-category">
+                  <Select
+                    id="tx-category"
+                    label="Catégorie"
+                    placeholder="Choisir une catégorie"
+                    searchPlaceholder="Rechercher une catégorie…"
+                    value={categoryId}
+                    onChange={(next) => {
+                      form.setValue('categoryId', next, { shouldDirty: true, shouldValidate: true });
+                      const nextCategory = categories.find((category) => category.id === next);
+                      form.setValue('merchantId', favoriteMerchantIdForCategory(nextCategory), {
+                        shouldDirty: true,
+                      });
+                    }}
+                    options={buildCategorySelectOptions(categories)}
+                    createOption={{
+                      label: 'Nouvelle catégorie',
+                      onCreate: () => setCategoryCreateOpen(true),
+                    }}
+                  />
+                  <input type="hidden" {...form.register('categoryId', { required: true })} />
+                </FormField>
+
+                <FormField label="Enseigne" htmlFor="tx-merchant">
+                  <Select
+                    id="tx-merchant"
+                    label="Enseigne"
+                    searchPlaceholder="Rechercher une enseigne…"
+                    value={merchantId}
+                    onChange={(next) => form.setValue('merchantId', next, { shouldDirty: true })}
+                    options={buildMerchantSelectOptions(merchants, selectedCategory ?? undefined)}
+                    createOption={{
+                      label: 'Nouvelle enseigne',
+                      onCreate: () => setMerchantCreateOpen(true),
+                    }}
+                  />
+                  <input type="hidden" {...form.register('merchantId')} />
+                </FormField>
+              </div>
+
+              {selectedCategory?.kind === 'both' && (
+                <FormField label="Sens">
+                  <ChoiceCards
+                    label="Sens"
+                    className="grid grid-cols-2 gap-2"
+                    value={flow}
+                    options={[
+                      { value: 'debit', label: 'Débit (−)', icon: 'arrow_downward' },
+                      { value: 'credit', label: 'Crédit (+)', icon: 'arrow_upward' },
+                    ]}
+                    onChange={(next) => form.setValue('flow', next, { shouldDirty: true })}
+                  />
+                </FormField>
               )}
-            </FormField>
+
+              <FormField label="Pièce jointe" htmlFor="tx-attachment-file">
+                {showExistingAttachment ? (
+                  <div className="flex min-h-24 items-center gap-2 rounded-control border border-border-subtle bg-elevated/50 px-3 py-2.5 text-control text-fg-secondary">
+                    <Icon name="attach_file" className="text-icon-sm shrink-0" />
+                    <span className="min-w-0 flex-1 truncate">{editing?.attachmentOriginalName ?? 'Pièce jointe'}</span>
+                    <button
+                      type="button"
+                      className="shrink-0 text-accent hover:underline"
+                      onClick={() => setRemoveAttachment(true)}
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Ajouter une photo ou un fichier"
+                    onClick={() => attachmentInputRef.current?.click()}
+                    onKeyDown={onAttachmentDropzoneKeyDown}
+                    onDragOver={onAttachmentDragOver}
+                    onDragEnter={onAttachmentDragOver}
+                    onDragLeave={onAttachmentDragLeave}
+                    onDrop={onAttachmentDrop}
+                    className={cn(
+                      'flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-control border border-dashed px-4 py-4 transition-colors',
+                      attachmentDragging
+                        ? 'border-accent bg-accent-tint/40'
+                        : 'border-border-subtle bg-elevated/40 hover:border-accent/60',
+                    )}
+                  >
+                    {attachmentFile ? (
+                      <div className="flex w-full items-center gap-2 text-left">
+                        <Icon name="attach_file" className="text-icon shrink-0 text-accent" />
+                        <span className="min-w-0 flex-1 truncate text-control text-fg-secondary">
+                          {attachmentFile.name}
+                        </span>
+                        <button
+                          type="button"
+                          className="shrink-0 text-control text-accent hover:underline"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            pickAttachment(null);
+                          }}
+                        >
+                          Retirer
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <Icon name="upload_file" className="text-3xl text-fg-muted" />
+                        <p className="m-0 text-center text-control text-fg-secondary">Photo ou PDF</p>
+                      </>
+                    )}
+                    <input
+                      ref={attachmentInputRef}
+                      id="tx-attachment-file"
+                      type="file"
+                      accept={ATTACHMENT_ACCEPT}
+                      className="sr-only"
+                      onChange={onAttachmentChange}
+                      onClick={(event) => event.stopPropagation()}
+                    />
+                  </div>
+                )}
+              </FormField>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-4">
+              <FormField label="Mode de paiement">
+                <ChoiceCards
+                  label="Mode de paiement"
+                  className="grid grid-cols-2 gap-2"
+                  value={paymentMethod}
+                  options={PAYMENT_METHODS.map((method) => ({
+                    value: method,
+                    label: PAYMENT_METHOD_LABELS[method],
+                    icon: PAYMENT_METHOD_ICONS[method],
+                  }))}
+                  onChange={(method) => form.setValue('paymentMethod', method, { shouldDirty: true })}
+                />
+              </FormField>
+
+              {paymentMethod === 'check' && (
+                <FormField label="N° de chèque" htmlFor="tx-check">
+                  <input
+                    id="tx-check"
+                    className={FIELD_CONTROL_CLASSES}
+                    {...form.register('checkNumber', { required: paymentMethod === 'check' })}
+                  />
+                </FormField>
+              )}
+
+              <FormField label="Montant" htmlFor="tx-amount">
+                <div className="relative flex min-h-28 items-stretch overflow-hidden rounded-control border border-border bg-page transition-[border-color,box-shadow] duration-(--duration-fast) focus-within:border-accent focus-within:shadow-[var(--focus-ring)] hover:border-border-strong dark:bg-elevated">
+                  <Controller
+                    name="amount"
+                    control={form.control}
+                    rules={{ required: true }}
+                    render={({ field }) => (
+                      <TpeAmountInput
+                        id="tx-amount"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        className={cn(
+                          'min-w-0 flex-1 border-0 bg-transparent px-10 py-3 text-center text-[2rem] leading-none font-bold tabular-nums outline-none',
+                          amountToneClass,
+                        )}
+                      />
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      'pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-[1.75rem] font-semibold tabular-nums',
+                      amountToneClass,
+                    )}
+                    aria-hidden="true"
+                  >
+                    €
+                  </span>
+                </div>
+              </FormField>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2 pt-1">

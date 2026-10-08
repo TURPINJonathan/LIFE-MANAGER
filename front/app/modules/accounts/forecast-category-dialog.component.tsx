@@ -3,7 +3,8 @@ import { BUTTON_VARIANT, DIALOG_SIZE, ICON_BUTTON_VARIANT } from '@constants';
 import type { ForecastLine } from '@app-types';
 import { cn, formatCents } from '@utils';
 
-import type { BudgetTone } from './forecast-budget.utils';
+import { forecastProgressMetaClass, type BudgetTone } from './forecast-budget.utils';
+import { ForecastProgressTrack } from './forecast-progress.component';
 
 type ForecastCategoryDialogProps = {
   open: boolean;
@@ -14,8 +15,8 @@ type ForecastCategoryDialogProps = {
   categoryColor: string;
   plannedCents: number;
   actualCents: number;
+  remainingCents: number;
   consumptionPercent: number;
-  overBudget: boolean;
   lines: ForecastLine[];
   onAddInstallment: () => void;
   onEditLine: (lineId: string) => void;
@@ -32,8 +33,8 @@ export function ForecastCategoryDialog({
   categoryColor,
   plannedCents,
   actualCents,
+  remainingCents,
   consumptionPercent,
-  overBudget,
   lines,
   onAddInstallment,
   onEditLine,
@@ -59,16 +60,18 @@ export function ForecastCategoryDialog({
               Réalisé <span className={cn('font-semibold', toneClass)}>{formatCents(actualCents)}</span>
             </p>
             <div className="mt-2 flex items-center gap-2">
-              <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-page">
-                <div
-                  className={cn(
-                    'h-full rounded-full',
-                    overBudget ? 'bg-error' : tone === 'income' ? 'bg-success-strong' : 'bg-accent',
-                  )}
-                  style={{ width: `${Math.min(100, consumptionPercent)}%` }}
-                />
-              </div>
-              <span className={cn('shrink-0 text-[11px] tabular-nums', overBudget ? 'text-error' : 'text-fg-muted')}>
+              <ForecastProgressTrack
+                percent={consumptionPercent}
+                remainingCents={remainingCents}
+                tone={tone}
+                variant="bar"
+              />
+              <span
+                className={cn(
+                  'shrink-0 text-[11px] tabular-nums',
+                  forecastProgressMetaClass(consumptionPercent, remainingCents, tone),
+                )}
+              >
                 {consumptionPercent}%
               </span>
             </div>

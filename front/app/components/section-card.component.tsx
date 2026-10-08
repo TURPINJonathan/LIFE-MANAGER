@@ -57,7 +57,9 @@ export function SectionCard({
   const surface = SECTION_CARD_TONE_CLASSES[tone][bordered ? 'bordered' : 'plain'];
 
   return (
-    <section className={cn('relative flex flex-col gap-3 overflow-hidden rounded-panel p-3', surface, className)}>
+    <section
+      className={cn('relative flex min-h-0 flex-col gap-3 overflow-hidden rounded-panel p-3', surface, className)}
+    >
       <Icon
         name={icon}
         aria-hidden="true"
@@ -67,7 +69,7 @@ export function SectionCard({
         )}
         style={hasTint ? { color: iconTint } : undefined}
       />
-      <div className="relative z-10 flex items-center gap-2">
+      <div className="relative z-10 flex shrink-0 items-center gap-2">
         <Icon
           name={icon}
           className={cn('text-icon-sm', !hasTint && SECTION_CARD_ICON_TONE[tone])}
@@ -78,7 +80,7 @@ export function SectionCard({
         </Typography>
         {headerAction}
       </div>
-      <div className="relative z-10 min-w-0 flex-1">{children}</div>
+      <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
     </section>
   );
 }

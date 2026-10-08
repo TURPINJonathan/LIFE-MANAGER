@@ -207,4 +207,83 @@ class TransactionRepository extends ServiceEntityRepository
 
         return (int) $sum;
     }
+
+    /**
+     * Opérations (date d’opération) des sous-comptes actifs, avec catégorie.
+     *
+     * @return list<array{
+     *   operationDate: \DateTimeImmutable,
+     *   amountCents: int,
+     *   subAccountId: string,
+     *   categoryId: string,
+     *   categoryName: string,
+     *   categoryIcon: string,
+     *   categoryColor: string,
+     *   categoryKind: string
+     * }>
+     */
+    public function listOwnedAmountsBetween(User $owner, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $this->createQueryBuilder('t')
+            ->select(
+                't.operationDate AS operationDate',
+                't.amountCents AS amountCents',
+                'IDENTITY(t.subAccount) AS subAccountId',
+                'IDENTITY(t.category) AS categoryId',
+                'c.name AS categoryName',
+                'c.icon AS categoryIcon',
+                'c.color AS categoryColor',
+                'c.kind AS categoryKind',
+            )
+            ->innerJoin('t.subAccount', 's')
+            ->innerJoin('s.account', 'a')
+            ->innerJoin('t.category', 'c')
+            ->andWhere('a.owner = :owner')
+            ->andWhere('a.archivedAt IS NULL')
+            ->andWhere('s.archivedAt IS NULL')
+            ->andWhere('t.operationDate >= :from')
+            ->andWhere('t.operationDate <= :to')
+            ->setParameter('owner', $owner)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->getQuery()
+            ->getArrayResult();
+
+        $out = [];
+        foreach ($rows as $row) {
+            $date = $row['operationDate'];
+            if (!$date instanceof \DateTimeImmutable) {
+                $date = new \DateTimeImmutable((string) $date);
+            }
+            $kind = $row['categoryKind'];
+            if ($kind instanceof \BackedEnum) {
+                $kind = $kind->value;
+            }
+            $categoryId = $row['categoryId'];
+            if ($categoryId instanceof Uuid) {
+                $categoryId = $categoryId->toRfc4122();
+            } else {
+                $categoryId = (string) $categoryId;
+            }
+            $subAccountId = $row['subAccountId'];
+            if ($subAccountId instanceof Uuid) {
+                $subAccountId = $subAccountId->toRfc4122();
+            } else {
+                $subAccountId = (string) $subAccountId;
+            }
+            $out[] = [
+                'operationDate' => $date,
+                'amountCents'   => (int) $row['amountCents'],
+                'subAccountId'  => $subAccountId,
+                'categoryId'    => $categoryId,
+                'categoryName'  => (string) $row['categoryName'],
+                'categoryIcon'  => (string) $row['categoryIcon'],
+                'categoryColor' => (string) $row['categoryColor'],
+                'categoryKind'  => (string) $kind,
+            ];
+        }
+
+        return $out;
+    }
 }

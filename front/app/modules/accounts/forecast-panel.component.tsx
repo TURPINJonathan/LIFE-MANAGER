@@ -33,6 +33,11 @@ import {
 import { BalanceTimelineChart } from './balance-timeline-chart.component';
 import {
   forecastLineToInput,
+  forecastProgressMetaClass,
+  forecastProgressPercentBadgeClass,
+  forecastProgressPercentBadgeLabel,
+  forecastProgressRemainingLabel,
+  forecastProgressRowSurfaceClass,
   forecastToLineInputs,
   isExpenseStatsRow,
   linesForCategoryGroup,
@@ -48,6 +53,7 @@ import {
   type ForecastLineEditContext,
   type ForecastLineFormValues,
 } from './forecast-line-dialog.component';
+import { ForecastProgressTrack } from './forecast-progress.component';
 import {
   aggregateStatsCategories,
   formatMonthLabel,
@@ -488,8 +494,8 @@ export function ForecastPanel({
       categoryColor: aggregated?.categoryColor ?? line.categoryColor,
       plannedCents: aggregated?.plannedAmountCents ?? siblings.reduce((sum, item) => sum + item.plannedAmountCents, 0),
       actualCents: aggregated?.actualAmountCents ?? 0,
+      remainingCents: aggregated?.remainingCents ?? 0,
       consumptionPercent: aggregated?.consumptionPercent ?? 0,
-      overBudget: aggregated?.overBudget ?? false,
       siblingLines: siblings,
       editingLineId: line.id,
     };
@@ -711,8 +717,8 @@ export function ForecastPanel({
           categoryColor={categoryDialogRow.categoryColor}
           plannedCents={categoryDialogRow.plannedAmountCents}
           actualCents={categoryDialogRow.actualAmountCents}
+          remainingCents={categoryDialogRow.remainingCents}
           consumptionPercent={categoryDialogRow.consumptionPercent}
-          overBudget={categoryDialogRow.overBudget}
           lines={categoryDialogLines}
           busy={busy}
           onAddInstallment={() => {
@@ -751,7 +757,6 @@ export function ForecastPanel({
           actualCents={operationsDialogRow.actualAmountCents}
           remainingCents={operationsDialogRow.remainingCents}
           consumptionPercent={operationsDialogRow.consumptionPercent}
-          overBudget={operationsDialogRow.overBudget}
           previousMonthLabel={prevMonthLabel}
           previousPlannedCents={operationsPrevious?.previousPlannedAmountCents ?? 0}
           previousActualCents={operationsPrevious?.previousActualAmountCents ?? 0}
@@ -1010,15 +1015,28 @@ function ForecastCategoryRow({
   onOpen: () => void;
   onOpenOperations: () => void;
 }) {
-  const remainingLabel =
-    row.remainingCents >= 0
-      ? `Reste ${formatCents(row.remainingCents)}`
-      : `+${formatCents(Math.abs(row.remainingCents))}`;
+  const remainingLabel = forecastProgressRemainingLabel(row.remainingCents, tone);
   const daysLabel = row.scheduledDays.length > 0 ? ` · j.${row.scheduledDays.join(', ')}` : '';
+  const metaClass = forecastProgressMetaClass(row.consumptionPercent, row.remainingCents, tone);
 
   return (
-    <li className="flex items-center gap-0.5 rounded-control border border-border-subtle bg-page/70 transition-colors hover:border-accent/40 hover:bg-accent-tint/30 dark:bg-page/20 dark:hover:bg-page/35">
-      <button type="button" onClick={onOpen} className="min-w-0 flex-1 cursor-pointer px-2.5 py-2 text-left">
+    <li
+      className={cn(
+        'relative flex items-center gap-0.5 overflow-hidden rounded-control transition-colors',
+        forecastProgressRowSurfaceClass(row.consumptionPercent, row.remainingCents, tone),
+      )}
+    >
+      <ForecastProgressTrack
+        percent={row.consumptionPercent}
+        remainingCents={row.remainingCents}
+        tone={tone}
+        variant="background"
+      />
+      <button
+        type="button"
+        onClick={onOpen}
+        className="relative z-10 min-w-0 flex-1 cursor-pointer px-2.5 py-2 text-left"
+      >
         <div className="flex items-center gap-2">
           <span
             className="flex size-7 shrink-0 items-center justify-center rounded-full text-white"
@@ -1053,30 +1071,24 @@ function ForecastCategoryRow({
               </div>
             </div>
 
-            <div className="mt-1 flex items-center gap-2">
-              <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-subtle">
-                <div
-                  className={cn(
-                    'h-full rounded-full',
-                    row.overBudget ? 'bg-error' : tone === 'income' ? 'bg-success-strong' : 'bg-accent',
-                  )}
-                  style={{ width: `${Math.min(100, row.consumptionPercent)}%` }}
-                />
-              </div>
-              <p
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <span
                 className={cn(
-                  'shrink-0 text-[11px] tabular-nums',
-                  row.overBudget ? 'font-medium text-error' : 'text-fg-muted',
+                  'inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums',
+                  forecastProgressPercentBadgeClass(row.consumptionPercent, row.remainingCents, tone),
                 )}
               >
-                {row.consumptionPercent}% · {remainingLabel}
+                {forecastProgressPercentBadgeLabel(row.consumptionPercent, row.remainingCents)}
+              </span>
+              <p className={cn('min-w-0 truncate text-right text-[11px] tabular-nums', metaClass)}>
+                {remainingLabel}
                 {row.lineCount > 1 ? ` · ${row.lineCount} échéances` : ''}
               </p>
             </div>
           </div>
         </div>
       </button>
-      <Tooltip content="Voir les opérations" className="shrink-0">
+      <Tooltip content="Voir les opérations" className="relative z-10 shrink-0">
         <button
           type="button"
           aria-label={`Opérations de ${row.categoryName}`}
@@ -1090,7 +1102,7 @@ function ForecastCategoryRow({
         type="button"
         onClick={onOpen}
         aria-label={`Échéances de ${row.categoryName}`}
-        className="mr-1.5 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-control-sm text-fg-muted transition-colors hover:bg-accent-tint/50 hover:text-accent"
+        className="relative z-10 mr-1.5 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-control-sm text-fg-muted transition-colors hover:bg-accent-tint/50 hover:text-accent"
       >
         <Icon name="chevron_right" className="text-[18px]!" />
       </button>

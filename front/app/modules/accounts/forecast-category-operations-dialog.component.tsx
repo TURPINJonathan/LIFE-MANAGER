@@ -8,7 +8,12 @@ import { useAuthStore } from '@store';
 import type { LedgerTransaction } from '@app-types';
 import { cn, formatCents, formatIsoDateFr, signedAmountClass, toastFromError } from '@utils';
 
-import type { BudgetTone } from './forecast-budget.utils';
+import {
+  forecastProgressMetaClass,
+  forecastProgressRemainingLabel,
+  type BudgetTone,
+} from './forecast-budget.utils';
+import { ForecastProgressTrack } from './forecast-progress.component';
 
 type ForecastCategoryOperationsDialogProps = {
   open: boolean;
@@ -24,7 +29,6 @@ type ForecastCategoryOperationsDialogProps = {
   actualCents: number;
   remainingCents: number;
   consumptionPercent: number;
-  overBudget: boolean;
   previousMonthLabel: string;
   previousPlannedCents: number;
   previousActualCents: number;
@@ -44,7 +48,6 @@ export function ForecastCategoryOperationsDialog({
   actualCents,
   remainingCents,
   consumptionPercent,
-  overBudget,
   previousMonthLabel,
   previousPlannedCents,
   previousActualCents,
@@ -54,18 +57,13 @@ export function ForecastCategoryOperationsDialog({
   const [transactions, setTransactions] = useState<LedgerTransaction[]>([]);
   const toneClass = tone === 'income' ? 'text-success-strong' : 'text-error';
   const underOrOnTarget = remainingCents >= 0;
-  const diffLabel = underOrOnTarget
-    ? `Reste ${formatCents(remainingCents)}`
-    : tone === 'expense'
-      ? `Dépassement ${formatCents(Math.abs(remainingCents))}`
-      : `+${formatCents(Math.abs(remainingCents))}`;
-  const diffClass = overBudget
-    ? 'text-error'
-    : underOrOnTarget
-      ? 'text-fg-primary'
-      : tone === 'income'
+  const diffLabel = forecastProgressRemainingLabel(remainingCents, tone);
+  const diffClass =
+    remainingCents < 0
+      ? tone === 'income'
         ? 'text-success-strong'
-        : 'text-error';
+        : 'text-error'
+      : 'text-fg-primary';
   const diffValue = underOrOnTarget ? formatCents(remainingCents) : `−${formatCents(Math.abs(remainingCents))}`;
   const previousRemainingCents = previousPlannedCents - previousActualCents;
   const previousDiffValue =
@@ -148,16 +146,18 @@ export function ForecastCategoryOperationsDialog({
               </div>
             </div>
             <div className="mt-3 flex items-center gap-2">
-              <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-page">
-                <div
-                  className={cn(
-                    'h-full rounded-full',
-                    overBudget ? 'bg-error' : tone === 'income' ? 'bg-success-strong' : 'bg-accent',
-                  )}
-                  style={{ width: `${Math.min(100, consumptionPercent)}%` }}
-                />
-              </div>
-              <span className={cn('shrink-0 text-[11px] tabular-nums', overBudget ? 'text-error' : 'text-fg-muted')}>
+              <ForecastProgressTrack
+                percent={consumptionPercent}
+                remainingCents={remainingCents}
+                tone={tone}
+                variant="bar"
+              />
+              <span
+                className={cn(
+                  'shrink-0 text-[11px] tabular-nums',
+                  forecastProgressMetaClass(consumptionPercent, remainingCents, tone),
+                )}
+              >
                 {consumptionPercent}% · {diffLabel}
               </span>
             </div>

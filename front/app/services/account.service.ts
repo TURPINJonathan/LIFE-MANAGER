@@ -287,6 +287,65 @@ export type ForecastStatsDashboard = {
   previous: Record<string, ForecastStats>;
 };
 
+export type ForecastYearSpan = 'calendar' | 'rolling';
+
+export type ForecastYearMonth = {
+  yearMonth: string;
+  actualIncomeCents: number;
+  actualExpenseCents: number;
+  actualNetCents: number;
+  plannedIncomeCents: number;
+  plannedExpenseCents: number;
+  plannedNetCents: number;
+};
+
+export type ForecastYearCategory = {
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  categoryKind: string;
+  actualIncomeCents: number;
+  actualExpenseCents: number;
+  plannedIncomeCents: number;
+  plannedExpenseCents: number;
+  months: ForecastYearMonth[];
+};
+
+export type ForecastYearSubAccount = {
+  subAccountId: string;
+  subAccountName: string;
+  accountName: string;
+  icon: string;
+  color: string;
+  months: ForecastYearMonth[];
+  totals: Omit<ForecastYearMonth, 'yearMonth'>;
+};
+
+export type ForecastYearSeries = {
+  anchor: string;
+  span: ForecastYearSpan;
+  from: string;
+  to: string;
+  months: ForecastYearMonth[];
+  totals: Omit<ForecastYearMonth, 'yearMonth'>;
+  categories: ForecastYearCategory[];
+  subAccounts: ForecastYearSubAccount[];
+};
+
+export async function fetchForecastYearSeries(
+  token: string,
+  anchor: string,
+  span: ForecastYearSpan,
+): Promise<ForecastYearSeries> {
+  const params = new URLSearchParams({ anchor, span });
+  const response = await apiFetch(`/api/forecast-stats/series?${params}`, { method: 'GET' }, token);
+  if (!response.ok) {
+    return parseError(response, 'Impossible de charger la vue annuelle.');
+  }
+  return readJson<ForecastYearSeries>(response);
+}
+
 export async function fetchForecastStatsDashboard(
   token: string,
   yearMonth: string,

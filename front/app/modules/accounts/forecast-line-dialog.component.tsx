@@ -10,9 +10,11 @@ import {
   buildCategorySelectOptionsForTone,
   defaultFlowForTone,
   filterCategoriesForTone,
+  forecastProgressMetaClass,
   lookupPreviousCategory,
   type BudgetTone,
 } from './forecast-budget.utils';
+import { ForecastProgressTrack } from './forecast-progress.component';
 import { MonthDayPicker } from './month-day-picker.component';
 
 export type ForecastLineFormValues = {
@@ -28,8 +30,8 @@ export type ForecastLineEditContext = {
   categoryColor: string;
   plannedCents: number;
   actualCents: number;
+  remainingCents: number;
   consumptionPercent: number;
-  overBudget: boolean;
   siblingLines: ForecastLine[];
   editingLineId: string;
 };
@@ -167,19 +169,20 @@ export function ForecastLineDialog({
                   Réalisé <span className={cn('font-semibold', toneClass)}>{formatCents(editContext.actualCents)}</span>
                 </p>
                 <div className="mt-2 flex items-center gap-2">
-                  <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-page">
-                    <div
-                      className={cn(
-                        'h-full rounded-full',
-                        editContext.overBudget ? 'bg-error' : tone === 'income' ? 'bg-success-strong' : 'bg-accent',
-                      )}
-                      style={{ width: `${Math.min(100, editContext.consumptionPercent)}%` }}
-                    />
-                  </div>
+                  <ForecastProgressTrack
+                    percent={editContext.consumptionPercent}
+                    remainingCents={editContext.remainingCents}
+                    tone={tone}
+                    variant="bar"
+                  />
                   <span
                     className={cn(
                       'shrink-0 text-[11px] tabular-nums',
-                      editContext.overBudget ? 'text-error' : 'text-fg-muted',
+                      forecastProgressMetaClass(
+                        editContext.consumptionPercent,
+                        editContext.remainingCents,
+                        tone,
+                      ),
                     )}
                   >
                     {editContext.consumptionPercent}%

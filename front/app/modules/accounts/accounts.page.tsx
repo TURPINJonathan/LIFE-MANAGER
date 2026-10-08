@@ -1,22 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 
-import { EmptyState, Icon, ListCard, Popover, SectionCard, Typography } from '@components';
+import { EmptyState, Icon, IconButton, ListCard, Popover, SectionCard, Typography } from '@components';
 import {
   APP_PAGE_FILL_CLASSES,
   APP_PINNED_LIST_BODY_CLASSES,
   APP_PINNED_LIST_CHROME_CLASSES,
+  ICON_BUTTON_VARIANT,
   POPOVER_PLACEMENT,
   accountLedgerPath,
   currentYearMonth,
   settingsPath,
   shiftYearMonth,
 } from '@constants';
-import { fetchForecastStatsDashboard, listAccounts } from '@services';
-import { useAuthStore } from '@store';
+import { fetchForecastStatsDashboard, listAccounts, type ForecastYearSpan } from '@services';
+import { useAuthStore, useDismissedAlertsStore } from '@store';
 import type { Account, ForecastStats, SubAccount } from '@app-types';
 import { cn, formatCents, signedAmountClass, toastFromError } from '@utils';
 
+import { AccountsYearPanel } from './accounts-year-panel.component';
 import { BalanceTimelineChart } from './balance-timeline-chart.component';
 import {
   aggregateDashboardCategoryBars,
@@ -25,6 +27,8 @@ import {
   budgetStatusLabel,
   collectUpcomingDeadlines,
   formatMonthLabel,
+  formatYearPeriodLabel,
+  monthDisplayBalanceCents,
   type FlatSubAccount,
 } from './forecast.utils';
 
@@ -36,6 +40,7 @@ type AccountGroup = {
 
 type WatchItem = {
   key: string;
+  dismissKey: string;
   sub: FlatSubAccount;
   kind: 'negative' | 'over';
   label: string;
@@ -129,6 +134,10 @@ function DashboardSkeleton() {
   );
 }
 
+function isYearMonth(value: string | null): value is string {
+  return Boolean(value && /^\d{4}-\d{2}$/.test(value));
+}
+
 function budgetSubtitle(status: 'ok' | 'over' | 'missing') {
   if (status === 'over') {
     return <span className="font-medium text-error">Dépassement</span>;
@@ -138,16 +147,39 @@ function budgetSubtitle(status: 'ok' | 'over' | 'missing') {
 
 export function AccountsPage() {
   const token = useAuthStore((state) => state.token);
-  const yearMonth = useMemo(() => currentYearMonth(), []);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawMonth = searchParams.get('mois');
+  const yearMonth = isYearMonth(rawMonth) ? rawMonth : currentYearMonth();
   const previousYearMonth = useMemo(() => shiftYearMonth(yearMonth, -1), [yearMonth]);
   const monthLabel = useMemo(() => formatMonthLabel(yearMonth), [yearMonth]);
   const previousMonthLabel = useMemo(() => formatMonthLabel(previousYearMonth), [previousYearMonth]);
+  const viewMode = searchParams.get('vue') === 'annee' ? 'year' : 'month';
+  const [yearSpan, setYearSpan] = useState<ForecastYearSpan>('calendar');
+  const periodLabel = useMemo(() => formatYearPeriodLabel(yearMonth, yearSpan), [yearMonth, yearSpan]);
+
+  const setYearMonth = (next: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === currentYearMonth()) params.delete('mois');
+    else params.set('mois', next);
+    setSearchParams(params);
+  };
+
+  const setViewMode = (next: 'month' | 'year') => {
+    const params = new URLSearchParams(searchParams);
+    if (next === 'year') params.set('vue', 'annee');
+    else params.delete('vue');
+    setSearchParams(params);
+  };
+
+  const shiftPeriod = (delta: number) => {
+    setYearMonth(shiftYearMonth(yearMonth, delta * 12));
+  };
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [statsBySubId, setStatsBySubId] = useState<Record<string, ForecastStats | null>>({});
   const [previousStatsBySubId, setPreviousStatsBySubId] = useState<Record<string, ForecastStats | null>>({});
   const [loading, setLoading] = useState(true);
-  const [forecastLoading, setForecastLoading] = useState(false);
+  const [forecastLoading, setForecastLoading] = useState(true);
   const [showPreviousOnChart, setShowPreviousOnChart] = useState(true);
 
   useEffect(() => {
@@ -160,17 +192,6 @@ export function AccountsPage() {
         if (cancelled) return;
         setAccounts(rows);
 
-        if (rows.flatMap((account) => account.subAccounts).length === 0) {
-          setStatsBySubId({});
-          setPreviousStatsBySubId({});
-          return;
-        }
-
-        setForecastLoading(true);
-        const dashboard = await fetchForecastStatsDashboard(token, yearMonth, true);
-        if (cancelled) return;
-        setStatsBySubId(dashboard.current);
-        setPreviousStatsBySubId(dashboard.previous);
       } catch (err) {
         if (!cancelled) {
           toastFromError(err, 'Chargement impossible.');
@@ -178,8 +199,34 @@ export function AccountsPage() {
       } finally {
         if (!cancelled) {
           setLoading(false);
-          setForecastLoading(false);
         }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    setForecastLoading(true);
+    setStatsBySubId({});
+    setPreviousStatsBySubId({});
+    (async () => {
+      try {
+        const dashboard = await fetchForecastStatsDashboard(token, yearMonth, true);
+        if (cancelled) return;
+        setStatsBySubId(dashboard.current);
+        setPreviousStatsBySubId(dashboard.previous);
+      } catch (err) {
+        if (!cancelled) {
+          toastFromError(err, 'Chargement du mois impossible.');
+          setStatsBySubId({});
+          setPreviousStatsBySubId({});
+        }
+      } finally {
+        if (!cancelled) setForecastLoading(false);
       }
     })();
     return () => {
@@ -198,32 +245,50 @@ export function AccountsPage() {
     [accounts],
   );
 
+  const displayBalanceBySubId = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const sub of subs) {
+      map[sub.id] = monthDisplayBalanceCents(statsBySubId[sub.id], sub.balanceCents);
+    }
+    return map;
+  }, [subs, statsBySubId]);
+
   const groups = useMemo<AccountGroup[]>(
     () =>
       accounts.map((account) => ({
         account,
-        balanceCents: account.subAccounts.reduce((sum, sub) => sum + sub.balanceCents, 0),
+        balanceCents: account.subAccounts.reduce(
+          (sum, sub) => sum + (displayBalanceBySubId[sub.id] ?? sub.balanceCents),
+          0,
+        ),
         subs: account.subAccounts,
       })),
-    [accounts],
+    [accounts, displayBalanceBySubId],
   );
 
-  const totalBalance = subs.reduce((sum, sub) => sum + sub.balanceCents, 0);
+  const totalBalance = useMemo(
+    () => subs.reduce((sum, sub) => sum + (displayBalanceBySubId[sub.id] ?? sub.balanceCents), 0),
+    [subs, displayBalanceBySubId],
+  );
   const negativeSubs = useMemo(
     () => [...subs].filter((sub) => sub.balanceCents < 0).sort((a, b) => a.balanceCents - b.balanceCents),
     [subs],
   );
 
   const distribution = useMemo(() => {
-    const absoluteTotal = subs.reduce((sum, sub) => sum + Math.abs(sub.balanceCents), 0);
-    return [...subs]
-      .sort((a, b) => Math.abs(b.balanceCents) - Math.abs(a.balanceCents))
+    const rows = subs.map((sub) => ({
+      ...sub,
+      displayBalanceCents: displayBalanceBySubId[sub.id] ?? sub.balanceCents,
+    }));
+    const absoluteTotal = rows.reduce((sum, sub) => sum + Math.abs(sub.displayBalanceCents), 0);
+    return [...rows]
+      .sort((a, b) => Math.abs(b.displayBalanceCents) - Math.abs(a.displayBalanceCents))
       .slice(0, 3)
       .map((sub) => ({
         ...sub,
-        share: absoluteTotal > 0 ? Math.round((Math.abs(sub.balanceCents) / absoluteTotal) * 100) : 0,
+        share: absoluteTotal > 0 ? Math.round((Math.abs(sub.displayBalanceCents) / absoluteTotal) * 100) : 0,
       }));
-  }, [subs]);
+  }, [subs, displayBalanceBySubId]);
 
   const forecast = useMemo(
     () => aggregateDashboardForecast(yearMonth, subs, statsBySubId),
@@ -237,15 +302,24 @@ export function AccountsPage() {
 
   const categoryBars = useMemo(() => aggregateDashboardCategoryBars(statsBySubId), [statsBySubId]);
 
-  const upcomingDeadlines = useMemo(() => collectUpcomingDeadlines(subs, statsBySubId, 6), [subs, statsBySubId]);
+  const upcomingDeadlines = useMemo(
+    () => collectUpcomingDeadlines(subs, statsBySubId, 6, yearMonth),
+    [subs, statsBySubId, yearMonth],
+  );
+
+  const dismissed = useDismissedAlertsStore((state) => state.dismissed);
+  const dismissAlert = useDismissedAlertsStore((state) => state.dismiss);
 
   const watchItems = useMemo<WatchItem[]>(() => {
     const items: WatchItem[] = [];
     const seen = new Set<string>();
 
     for (const sub of negativeSubs) {
+      const dismissKey = `accounts:neg:${sub.id}:${sub.balanceCents}`;
+      if (dismissed[dismissKey]) continue;
       items.push({
         key: `neg-${sub.id}`,
+        dismissKey,
         sub,
         kind: 'negative',
         label: 'Solde négatif',
@@ -264,6 +338,8 @@ export function AccountsPage() {
         (sum, row) => sum + Math.max(0, row.actualAmountCents - row.plannedAmountCents),
         0,
       );
+      const dismissKey = `accounts:over:${sub.id}:${yearMonth}:${overshootCents}`;
+      if (dismissed[dismissKey]) continue;
       const detail =
         overCats.length === 0
           ? 'Budget dépassé'
@@ -273,6 +349,7 @@ export function AccountsPage() {
 
       items.push({
         key: `over-${sub.id}`,
+        dismissKey,
         sub,
         kind: 'over',
         label: 'Dépassement budget',
@@ -284,7 +361,7 @@ export function AccountsPage() {
     }
 
     return items.slice(0, 5);
-  }, [negativeSubs, forecast.overBudgetSubs, statsBySubId]);
+  }, [negativeSubs, forecast.overBudgetSubs, statsBySubId, dismissed, yearMonth]);
 
   const hasAnySub = subs.length > 0;
   const hasForecastData = Object.keys(statsBySubId).length > 0 && !forecastLoading;
@@ -294,13 +371,88 @@ export function AccountsPage() {
   return (
     <div className={APP_PAGE_FILL_CLASSES}>
       <div className={APP_PINNED_LIST_CHROME_CLASSES}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 flex-1">
             <Typography variant="title" as="h1" className="truncate">
               Comptes
             </Typography>
           </div>
-          <div className="relative z-10 flex shrink-0 items-center gap-0.5">
+          <div className="flex items-center gap-0.5">
+            <IconButton
+              variant={ICON_BUTTON_VARIANT.ghost}
+              icon="chevron_left"
+              aria-label={viewMode === 'year' ? 'Période précédente' : 'Mois précédent'}
+              onClick={() => (viewMode === 'year' ? shiftPeriod(-1) : setYearMonth(shiftYearMonth(yearMonth, -1)))}
+            />
+            <Typography
+              variant="body"
+              weight="semibold"
+              className="min-w-[8.5rem] text-center tabular-nums sm:min-w-[11rem]"
+            >
+              {viewMode === 'year' ? periodLabel : monthLabel}
+            </Typography>
+            <IconButton
+              variant={ICON_BUTTON_VARIANT.ghost}
+              icon="chevron_right"
+              aria-label={viewMode === 'year' ? 'Période suivante' : 'Mois suivant'}
+              onClick={() => (viewMode === 'year' ? shiftPeriod(1) : setYearMonth(shiftYearMonth(yearMonth, 1)))}
+            />
+          </div>
+          <div className="relative z-10 flex flex-1 items-center justify-end gap-0.5">
+            {viewMode === 'year' ? (
+              <div
+                className="me-1 inline-flex rounded-control border border-border-subtle bg-subtle p-0.5"
+                role="group"
+                aria-label="Période annuelle"
+              >
+                <button
+                  type="button"
+                  onClick={() => setYearSpan('calendar')}
+                  className={cn(
+                    'h-8 cursor-pointer rounded-control px-2.5 text-control font-medium transition-colors',
+                    yearSpan === 'calendar' ? 'bg-elevated text-fg-primary' : 'text-fg-muted hover:text-fg-primary',
+                  )}
+                >
+                  Année {yearMonth.slice(0, 4)}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setYearSpan('rolling')}
+                  className={cn(
+                    'h-8 cursor-pointer rounded-control px-2.5 text-control font-medium transition-colors',
+                    yearSpan === 'rolling' ? 'bg-elevated text-fg-primary' : 'text-fg-muted hover:text-fg-primary',
+                  )}
+                >
+                  12 mois
+                </button>
+              </div>
+            ) : null}
+            <div
+              className="inline-flex rounded-control border border-border-subtle bg-subtle p-0.5"
+              role="group"
+              aria-label="Vue du tableau de bord"
+            >
+              <button
+                type="button"
+                onClick={() => setViewMode('month')}
+                className={cn(
+                  'h-8 cursor-pointer rounded-control px-2.5 text-control font-medium transition-colors',
+                  viewMode === 'month' ? 'bg-elevated text-fg-primary' : 'text-fg-muted hover:text-fg-primary',
+                )}
+              >
+                Mois
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('year')}
+                className={cn(
+                  'h-8 cursor-pointer rounded-control px-2.5 text-control font-medium transition-colors',
+                  viewMode === 'year' ? 'bg-elevated text-fg-primary' : 'text-fg-muted hover:text-fg-primary',
+                )}
+              >
+                Année
+              </button>
+            </div>
             <button
               ref={watchAnchorRef}
               type="button"
@@ -344,7 +496,10 @@ export function AccountsPage() {
                     <li key={item.key}>
                       <Link
                         to={item.to}
-                        onClick={() => setWatchOpen(false)}
+                        onClick={() => {
+                          dismissAlert(item.dismissKey);
+                          setWatchOpen(false);
+                        }}
                         className="flex items-center justify-between gap-3 rounded-control px-2 py-2 text-body hover:bg-subtle"
                       >
                         <span className="min-w-0">
@@ -394,13 +549,15 @@ export function AccountsPage() {
               </Link>
             }
           />
+        ) : viewMode === 'year' ? (
+          <AccountsYearPanel anchor={yearMonth} span={yearSpan} />
         ) : (
           <>
             <div className="grid gap-4 lg:grid-cols-4 lg:items-stretch">
               <section
                 className={cn(
                   'relative flex min-w-0 flex-col gap-3 overflow-hidden rounded-panel p-3',
-                  totalBalance < 0 ? 'bg-error/8' : 'bg-success/8',
+                  hasForecastData && totalBalance < 0 ? 'bg-error/8' : 'bg-success/8',
                 )}
               >
                 <Icon
@@ -419,10 +576,10 @@ export function AccountsPage() {
                   <p
                     className={cn(
                       'mt-1 text-[1.65rem] font-bold tracking-tight tabular-nums sm:text-[1.85rem]',
-                      signedAmountClass(totalBalance),
+                      hasForecastData ? signedAmountClass(totalBalance) : 'text-fg-muted',
                     )}
                   >
-                    {formatCents(totalBalance)}
+                    {hasForecastData ? formatCents(totalBalance) : '…'}
                   </p>
                   <p className="mt-1 truncate text-[11px] tabular-nums text-fg-muted">
                     Fin estimée{' '}
@@ -527,10 +684,10 @@ export function AccountsPage() {
                         <p
                           className={cn(
                             'min-w-[6.5rem] shrink-0 text-right text-body font-semibold tabular-nums',
-                            signedAmountClass(balanceCents),
+                            hasForecastData ? signedAmountClass(balanceCents) : 'text-fg-muted',
                           )}
                         >
-                          {formatCents(balanceCents)}
+                          {hasForecastData ? formatCents(balanceCents) : '…'}
                         </p>
                       )}
                     </div>
@@ -549,6 +706,7 @@ export function AccountsPage() {
                       <ul className="relative z-10 m-0 flex list-none flex-col gap-2 p-0">
                         {accountSubs.map((sub) => {
                           const status = budgetStatusLabel(forecast.bySubId[sub.id]);
+                          const displayBalance = displayBalanceBySubId[sub.id] ?? sub.balanceCents;
                           return (
                             <li key={sub.id}>
                               <ListCard
@@ -561,10 +719,10 @@ export function AccountsPage() {
                                   <span
                                     className={cn(
                                       'inline-block min-w-[6.5rem] text-right text-body font-semibold tabular-nums',
-                                      signedAmountClass(sub.balanceCents),
+                                      hasForecastData ? signedAmountClass(displayBalance) : 'text-fg-muted',
                                     )}
                                   >
-                                    {formatCents(sub.balanceCents)}
+                                    {hasForecastData ? formatCents(displayBalance) : '…'}
                                   </span>
                                 }
                                 actions={
@@ -632,7 +790,9 @@ export function AccountsPage() {
                 bordered={false}
                 className="flex min-w-0 flex-col lg:col-span-1"
               >
-                {upcomingDeadlines.length === 0 ? (
+                {forecastLoading ? (
+                  <p className="py-6 text-center text-body text-fg-muted">Chargement…</p>
+                ) : upcomingDeadlines.length === 0 ? (
                   <EmptyState
                     compact
                     icon="event_upcoming"

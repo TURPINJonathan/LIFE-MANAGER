@@ -62,4 +62,39 @@ class MonthlyForecastRepository extends ServiceEntityRepository
 
         return $forecast;
     }
+
+    /**
+     * Budgets des sous-comptes actifs, bornes YYYY-MM incluses.
+     *
+     * @return list<MonthlyForecast>
+     */
+    public function listOwnedBetween(User $owner, string $fromYearMonth, string $toYearMonth): array
+    {
+        /** @var list<MonthlyForecast> $rows */
+        $rows = $this->createQueryBuilder('f')
+            ->innerJoin('f.subAccount', 's')
+            ->innerJoin('s.account', 'a')
+            ->leftJoin('f.lines', 'l')
+            ->addSelect('l')
+            ->leftJoin('l.category', 'c')
+            ->addSelect('c')
+            ->andWhere('a.owner = :owner')
+            ->andWhere('a.archivedAt IS NULL')
+            ->andWhere('s.archivedAt IS NULL')
+            ->andWhere('f.yearMonth >= :from')
+            ->andWhere('f.yearMonth <= :to')
+            ->setParameter('owner', $owner)
+            ->setParameter('from', $fromYearMonth)
+            ->setParameter('to', $toYearMonth)
+            ->getQuery()
+            ->getResult();
+
+        // Un fetch-join sur les lignes répète le budget une fois par ligne.
+        $unique = [];
+        foreach ($rows as $forecast) {
+            $unique[$forecast->getId()->toRfc4122()] = $forecast;
+        }
+
+        return array_values($unique);
+    }
 }

@@ -173,6 +173,412 @@ final class ForecastManager
     }
 
     /**
+     * Série mensuelle agrégée (tous les sous-comptes actifs).
+     * `calendar` = janvier–décembre de l’année de l’ancre.
+     * `rolling` = 12 mois se terminant sur l’ancre.
+     *
+     * @return array{
+     *   anchor: string,
+     *   span: string,
+     *   from: string,
+     *   to: string,
+     *   months: list<array{
+     *     yearMonth: string,
+     *     actualIncomeCents: int,
+     *     actualExpenseCents: int,
+     *     actualNetCents: int,
+     *     plannedIncomeCents: int,
+     *     plannedExpenseCents: int,
+     *     plannedNetCents: int
+     *   }>,
+     *   totals: array{
+     *     actualIncomeCents: int,
+     *     actualExpenseCents: int,
+     *     actualNetCents: int,
+     *     plannedIncomeCents: int,
+     *     plannedExpenseCents: int,
+     *     plannedNetCents: int
+     *   },
+     *   categories: list<array{
+     *     categoryId: string,
+     *     categoryName: string,
+     *     categoryIcon: string,
+     *     categoryColor: string,
+     *     categoryKind: string,
+     *     actualIncomeCents: int,
+     *     actualExpenseCents: int,
+     *     plannedIncomeCents: int,
+     *     plannedExpenseCents: int,
+     *     months: list<array{
+     *       yearMonth: string,
+     *       actualIncomeCents: int,
+     *       actualExpenseCents: int,
+     *       actualNetCents: int,
+     *       plannedIncomeCents: int,
+     *       plannedExpenseCents: int,
+     *       plannedNetCents: int
+     *     }>
+     *   }>,
+     *   subAccounts: list<array{
+     *     subAccountId: string,
+     *     subAccountName: string,
+     *     accountName: string,
+     *     icon: string,
+     *     color: string,
+     *     months: list<array{
+     *       yearMonth: string,
+     *       actualIncomeCents: int,
+     *       actualExpenseCents: int,
+     *       actualNetCents: int,
+     *       plannedIncomeCents: int,
+     *       plannedExpenseCents: int,
+     *       plannedNetCents: int
+     *     }>,
+     *     totals: array{
+     *       actualIncomeCents: int,
+     *       actualExpenseCents: int,
+     *       actualNetCents: int,
+     *       plannedIncomeCents: int,
+     *       plannedExpenseCents: int,
+     *       plannedNetCents: int
+     *     }
+     *   }>
+     * }
+     */
+    public function yearSeries(string $anchorYearMonth, string $span): array
+    {
+        $anchor = MonthlyForecast::normalizeYearMonth($anchorYearMonth);
+        [$from, $to] = $this->seriesBounds($anchor, $span);
+        $months = $this->emptySeriesMonths($from, $to);
+
+        /** @var array<string, array{
+         *   categoryId: string,
+         *   categoryName: string,
+         *   categoryIcon: string,
+         *   categoryColor: string,
+         *   categoryKind: string,
+         *   actualIncomeCents: int,
+         *   actualExpenseCents: int,
+         *   plannedIncomeCents: int,
+         *   plannedExpenseCents: int,
+         *   months: array<string, array<string, int|string>>
+         * }> $categories
+         */
+        $categories = [];
+        $ensureCategory = function (
+            array &$categories,
+            string $id,
+            string $name,
+            string $icon,
+            string $color,
+            string $kind,
+        ) use ($from, $to): void {
+            if (isset($categories[$id])) {
+                return;
+            }
+            $categories[$id] = [
+                'categoryId'          => $id,
+                'categoryName'        => $name,
+                'categoryIcon'        => $icon,
+                'categoryColor'       => $color,
+                'categoryKind'        => $kind,
+                'actualIncomeCents'   => 0,
+                'actualExpenseCents'  => 0,
+                'plannedIncomeCents'  => 0,
+                'plannedExpenseCents' => 0,
+                'months'              => $this->emptySeriesMonths($from, $to),
+            ];
+        };
+
+        /** @var array<string, array{
+         *   subAccountId: string,
+         *   subAccountName: string,
+         *   accountName: string,
+         *   icon: string,
+         *   color: string,
+         *   months: array<string, array<string, int|string>>,
+         * }> $bySub
+         */
+        $bySub = [];
+        foreach ($this->accounts->listActiveSubAccountEntities() as $sub) {
+            $id = $sub->getId()->toRfc4122();
+            $bySub[$id] = [
+                'subAccountId'   => $id,
+                'subAccountName' => $sub->getName(),
+                'accountName'    => $sub->getAccount()->getName(),
+                'icon'           => $sub->getIcon(),
+                'color'          => $sub->getColor(),
+                'months'         => $this->emptySeriesMonths($from, $to),
+            ];
+        }
+
+        $owner = $this->users->requireUser();
+        $fromDate = new \DateTimeImmutable($from.'-01');
+        $toDate = (new \DateTimeImmutable($to.'-01'))->modify('last day of this month');
+
+        foreach ($this->transactions->listOwnedAmountsBetween($owner, $fromDate, $toDate) as $row) {
+            $ym = $row['operationDate']->format('Y-m');
+            if (!isset($months[$ym])) {
+                continue;
+            }
+            $cents = $row['amountCents'];
+            $ensureCategory(
+                $categories,
+                $row['categoryId'],
+                $row['categoryName'],
+                $row['categoryIcon'],
+                $row['categoryColor'],
+                $row['categoryKind'],
+            );
+            $subId = $row['subAccountId'];
+            if ($cents > 0) {
+                $months[$ym]['actualIncomeCents'] += $cents;
+                $categories[$row['categoryId']]['actualIncomeCents'] += $cents;
+                $categories[$row['categoryId']]['months'][$ym]['actualIncomeCents'] += $cents;
+                if (isset($bySub[$subId]['months'][$ym])) {
+                    $bySub[$subId]['months'][$ym]['actualIncomeCents'] += $cents;
+                }
+            } elseif ($cents < 0) {
+                $expense = abs($cents);
+                $months[$ym]['actualExpenseCents'] += $expense;
+                $categories[$row['categoryId']]['actualExpenseCents'] += $expense;
+                $categories[$row['categoryId']]['months'][$ym]['actualExpenseCents'] += $expense;
+                if (isset($bySub[$subId]['months'][$ym])) {
+                    $bySub[$subId]['months'][$ym]['actualExpenseCents'] += $expense;
+                }
+            }
+        }
+
+        foreach ($this->forecasts->listOwnedBetween($owner, $from, $to) as $forecast) {
+            $ym = $forecast->getYearMonth();
+            if (!isset($months[$ym])) {
+                continue;
+            }
+            $subId = $forecast->getSubAccount()->getId()->toRfc4122();
+            foreach ($forecast->getLines() as $line) {
+                $category = $line->getCategory();
+                $categoryId = $category->getId()->toRfc4122();
+                $ensureCategory(
+                    $categories,
+                    $categoryId,
+                    $category->getName(),
+                    $category->getIcon(),
+                    $category->getColor(),
+                    $category->getKind()->value,
+                );
+                $signed = AmountFromCategory::signedCents(
+                    $category,
+                    $line->getPlannedAmountCents(),
+                    $line->getFlow(),
+                    true,
+                );
+                if ($signed > 0) {
+                    $months[$ym]['plannedIncomeCents'] += $signed;
+                    $categories[$categoryId]['plannedIncomeCents'] += $signed;
+                    $categories[$categoryId]['months'][$ym]['plannedIncomeCents'] += $signed;
+                    if (isset($bySub[$subId]['months'][$ym])) {
+                        $bySub[$subId]['months'][$ym]['plannedIncomeCents'] += $signed;
+                    }
+                } elseif ($signed < 0) {
+                    $expense = abs($signed);
+                    $months[$ym]['plannedExpenseCents'] += $expense;
+                    $categories[$categoryId]['plannedExpenseCents'] += $expense;
+                    $categories[$categoryId]['months'][$ym]['plannedExpenseCents'] += $expense;
+                    if (isset($bySub[$subId]['months'][$ym])) {
+                        $bySub[$subId]['months'][$ym]['plannedExpenseCents'] += $expense;
+                    }
+                }
+            }
+        }
+
+        [$list, $totals] = $this->finalizeSeriesMonths($months);
+        $categoryList = [];
+        foreach ($categories as $categoryRow) {
+            [$categoryMonths] = $this->finalizeSeriesMonths($categoryRow['months']);
+            unset($categoryRow['months']);
+            $categoryRow['months'] = $categoryMonths;
+            $categoryList[] = $categoryRow;
+        }
+        usort(
+            $categoryList,
+            static function (array $a, array $b): int {
+                // Revenus d’abord, puis dépenses ; alphabétique dans chaque groupe.
+                $aExpense = self::seriesCategoryIsExpenseGroup($a);
+                $bExpense = self::seriesCategoryIsExpenseGroup($b);
+                if ($aExpense !== $bExpense) {
+                    return $aExpense <=> $bExpense;
+                }
+
+                return strcasecmp($a['categoryName'], $b['categoryName']);
+            },
+        );
+
+        $subAccounts = [];
+        foreach ($bySub as $subRow) {
+            [$subMonths, $subTotals] = $this->finalizeSeriesMonths($subRow['months']);
+            $subAccounts[] = [
+                'subAccountId'   => $subRow['subAccountId'],
+                'subAccountName' => $subRow['subAccountName'],
+                'accountName'    => $subRow['accountName'],
+                'icon'           => $subRow['icon'],
+                'color'          => $subRow['color'],
+                'months'         => $subMonths,
+                'totals'         => $subTotals,
+            ];
+        }
+        usort(
+            $subAccounts,
+            static fn (array $a, array $b): int => strcmp($a['accountName'], $b['accountName'])
+                ?: strcmp($a['subAccountName'], $b['subAccountName']),
+        );
+
+        return [
+            'anchor'      => $anchor,
+            'span'        => $span,
+            'from'        => $from,
+            'to'          => $to,
+            'months'      => $list,
+            'totals'      => $totals,
+            'categories'  => $categoryList,
+            'subAccounts' => $subAccounts,
+        ];
+    }
+
+    /**
+     * @return array<string, array{
+     *   yearMonth: string,
+     *   actualIncomeCents: int,
+     *   actualExpenseCents: int,
+     *   actualNetCents: int,
+     *   plannedIncomeCents: int,
+     *   plannedExpenseCents: int,
+     *   plannedNetCents: int
+     * }>
+     */
+    private function emptySeriesMonths(string $from, string $to): array
+    {
+        $months = [];
+        $cursor = new \DateTimeImmutable($from.'-01');
+        $end = new \DateTimeImmutable($to.'-01');
+        while ($cursor <= $end) {
+            $ym = $cursor->format('Y-m');
+            $months[$ym] = [
+                'yearMonth'           => $ym,
+                'actualIncomeCents'   => 0,
+                'actualExpenseCents'  => 0,
+                'actualNetCents'      => 0,
+                'plannedIncomeCents'  => 0,
+                'plannedExpenseCents' => 0,
+                'plannedNetCents'     => 0,
+            ];
+            $cursor = $cursor->modify('+1 month');
+        }
+
+        return $months;
+    }
+
+    /**
+     * @param array<string, array{
+     *   yearMonth: string,
+     *   actualIncomeCents: int,
+     *   actualExpenseCents: int,
+     *   actualNetCents: int,
+     *   plannedIncomeCents: int,
+     *   plannedExpenseCents: int,
+     *   plannedNetCents: int
+     * }> $months
+     *
+     * @return array{
+     *   0: list<array{
+     *     yearMonth: string,
+     *     actualIncomeCents: int,
+     *     actualExpenseCents: int,
+     *     actualNetCents: int,
+     *     plannedIncomeCents: int,
+     *     plannedExpenseCents: int,
+     *     plannedNetCents: int
+     *   }>,
+     *   1: array{
+     *     actualIncomeCents: int,
+     *     actualExpenseCents: int,
+     *     actualNetCents: int,
+     *     plannedIncomeCents: int,
+     *     plannedExpenseCents: int,
+     *     plannedNetCents: int
+     *   }
+     * }
+     */
+    private function finalizeSeriesMonths(array $months): array
+    {
+        $totals = [
+            'actualIncomeCents'   => 0,
+            'actualExpenseCents'  => 0,
+            'actualNetCents'      => 0,
+            'plannedIncomeCents'  => 0,
+            'plannedExpenseCents' => 0,
+            'plannedNetCents'     => 0,
+        ];
+        $list = [];
+        foreach ($months as $bucket) {
+            $bucket['actualNetCents'] = $bucket['actualIncomeCents'] - $bucket['actualExpenseCents'];
+            $bucket['plannedNetCents'] = $bucket['plannedIncomeCents'] - $bucket['plannedExpenseCents'];
+            $totals['actualIncomeCents'] += $bucket['actualIncomeCents'];
+            $totals['actualExpenseCents'] += $bucket['actualExpenseCents'];
+            $totals['plannedIncomeCents'] += $bucket['plannedIncomeCents'];
+            $totals['plannedExpenseCents'] += $bucket['plannedExpenseCents'];
+            $list[] = $bucket;
+        }
+        $totals['actualNetCents'] = $totals['actualIncomeCents'] - $totals['actualExpenseCents'];
+        $totals['plannedNetCents'] = $totals['plannedIncomeCents'] - $totals['plannedExpenseCents'];
+
+        return [$list, $totals];
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function seriesBounds(string $anchor, string $span): array
+    {
+        if ('calendar' === $span) {
+            $year = substr($anchor, 0, 4);
+
+            return [$year.'-01', $year.'-12'];
+        }
+        if ('rolling' === $span) {
+            $end = new \DateTimeImmutable($anchor.'-01');
+            $start = $end->modify('-11 months');
+
+            return [$start->format('Y-m'), $end->format('Y-m')];
+        }
+
+        throw new \InvalidArgumentException('Le paramètre span doit être calendar ou rolling.');
+    }
+
+    /**
+     * @param array{
+     *   categoryKind: string,
+     *   actualIncomeCents: int,
+     *   actualExpenseCents: int,
+     *   plannedIncomeCents: int,
+     *   plannedExpenseCents: int
+     * } $row
+     */
+    private static function seriesCategoryIsExpenseGroup(array $row): bool
+    {
+        if ('expense' === $row['categoryKind']) {
+            return true;
+        }
+        if ('income' === $row['categoryKind']) {
+            return false;
+        }
+
+        $expenseWeight = $row['actualExpenseCents'] + $row['plannedExpenseCents'];
+        $incomeWeight = $row['actualIncomeCents'] + $row['plannedIncomeCents'];
+
+        return $expenseWeight >= $incomeWeight;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function statsForSubAccount(SubAccount $sub, string $yearMonth): array

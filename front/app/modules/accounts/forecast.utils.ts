@@ -1,6 +1,7 @@
+import { currentYearMonth } from '@constants';
 import type { CategoryKind, ForecastStats, ForecastStatsCategory, ForecastTimelinePoint, SubAccount } from '@app-types';
 
-import { isExpenseStatsRow } from './forecast-budget.utils';
+import { compareForecastProgress, isExpenseStatsRow } from './forecast-budget.utils';
 
 export type FlatSubAccount = SubAccount & { accountName: string };
 
@@ -94,7 +95,7 @@ export function aggregateStatsCategories(rows: ForecastStatsCategory[]): Aggrega
       if (aExpense !== bExpense) {
         return aExpense ? -1 : 1;
       }
-      return b.consumptionPercent - a.consumptionPercent || a.categoryName.localeCompare(b.categoryName, 'fr');
+      return compareForecastProgress(a, b);
     });
 }
 
@@ -155,6 +156,36 @@ export function formatMonthLabel(yearMonth: string): string {
   const [year, month] = yearMonth.split('-').map(Number);
   const label = new Date(year, month - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/** Libellé court pour une borne de période (ex. « oct. 2025 »). */
+export function formatMonthShortLabel(yearMonth: string): string {
+  const [year, month] = yearMonth.split('-').map(Number);
+  return new Date(year, month - 1, 1)
+    .toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })
+    .replace('.', '');
+}
+
+/** Libellé chrome pour la période annuelle (année civile ou 12 mois). */
+export function formatYearPeriodLabel(anchor: string, span: 'calendar' | 'rolling'): string {
+  if (span === 'calendar') {
+    return `Année ${anchor.slice(0, 4)}`;
+  }
+  const [y, m] = anchor.split('-').map(Number);
+  const start = new Date(y, m - 1 - 11, 1);
+  const from = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
+  return `${formatMonthShortLabel(from)} — ${formatMonthShortLabel(anchor)}`;
+}
+
+/** Solde à afficher pour le mois sélectionné (fin de mois / actuel / projection). */
+export function monthDisplayBalanceCents(
+  stats: ForecastStats | null | undefined,
+  liveBalanceCents: number,
+): number {
+  if (!stats) return liveBalanceCents;
+  if (stats.meta.isPastMonth) return stats.balances.endOfMonthActualCents;
+  if (stats.meta.isFutureMonth) return stats.balances.projectedRealisticCents;
+  return stats.balances.currentCents;
 }
 
 export function budgetStatusLabel(summary: SubForecastSummary | undefined): 'ok' | 'over' | 'missing' {
@@ -266,14 +297,23 @@ export type UpcomingDeadline = {
   accountName: string;
 };
 
-/** Prochaines échéances budget (jour planifié ≥ aujourd’hui), triées. */
+/**
+ * Échéances budget du mois affiché.
+ * Mois courant : jour ≥ aujourd’hui. Mois futurs : toutes. Mois passés : aucune.
+ */
 export function collectUpcomingDeadlines(
   subs: FlatSubAccount[],
   statsBySubId: Record<string, ForecastStats | null>,
   limit = 6,
+  yearMonth?: string,
 ): UpcomingDeadline[] {
+  const current = currentYearMonth();
+  const targetMonth = yearMonth ?? current;
+  if (targetMonth < current) {
+    return [];
+  }
+  const minDay = targetMonth === current ? new Date().getDate() : 1;
   const items: UpcomingDeadline[] = [];
-  const today = new Date().getDate();
 
   for (const sub of subs) {
     const stats = statsBySubId[sub.id];
@@ -281,7 +321,7 @@ export function collectUpcomingDeadlines(
     const daysInMonth = stats.meta.daysInMonth;
     for (const row of stats.categories) {
       const day = row.scheduledDay ?? daysInMonth;
-      if (day < today) continue;
+      if (day < minDay) continue;
       const isExpense = row.categoryKind === 'expense' || (row.categoryKind === 'both' && row.flow === 'debit');
       items.push({
         key: `${sub.id}-${row.lineId}`,

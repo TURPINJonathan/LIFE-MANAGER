@@ -189,6 +189,100 @@ final class ForecastFlowTest extends WebTestCase
         );
     }
 
+    public function testYearSeriesCalendarAndRolling(): void
+    {
+        $expense = $this->json('POST', '/api/categories', [
+            'name'  => 'Courses',
+            'icon'  => 'shopping_cart',
+            'color' => '#16A34A',
+            'kind'  => 'expense',
+        ]);
+        $income = $this->json('POST', '/api/categories', [
+            'name'  => 'Salaire',
+            'icon'  => 'payments',
+            'color' => '#2563EB',
+            'kind'  => 'income',
+        ]);
+        $account = $this->json('POST', '/api/accounts', ['name' => 'Perso']);
+        $sub = $this->json('POST', '/api/accounts/'.$account['id'].'/sub-accounts', [
+            'name'                => 'Courant',
+            'icon'                => 'account_balance',
+            'color'               => '#2563EB',
+            'openingBalanceCents' => 0,
+        ]);
+
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/forecasts', [
+            'yearMonth' => '2026-01',
+            'lines'     => [
+                ['categoryId' => $income['id'], 'plannedAmountCents' => 200_000],
+                ['categoryId' => $expense['id'], 'plannedAmountCents' => 40_000],
+            ],
+        ]);
+        self::assertResponseStatusCodeSame(201);
+
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/transactions', [
+            'categoryId'    => $income['id'],
+            'operationDate' => '2026-01-10',
+            'paymentMethod' => 'transfer',
+            'designation'   => 'Salaire',
+            'amountCents'   => 150_000,
+        ]);
+        self::assertResponseStatusCodeSame(201);
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/transactions', [
+            'categoryId'    => $expense['id'],
+            'operationDate' => '2026-01-20',
+            'paymentMethod' => 'card',
+            'designation'   => 'Courses',
+            'amountCents'   => 10_000,
+        ]);
+        self::assertResponseStatusCodeSame(201);
+        $this->json('POST', '/api/sub-accounts/'.$sub['id'].'/transactions', [
+            'categoryId'    => $income['id'],
+            'operationDate' => '2025-12-15',
+            'paymentMethod' => 'transfer',
+            'designation'   => 'Prime',
+            'amountCents'   => 50_000,
+        ]);
+        self::assertResponseStatusCodeSame(201);
+
+        $calendar = $this->json('GET', '/api/forecast-stats/series?anchor=2026-03&span=calendar');
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame('calendar', $calendar['span']);
+        self::assertSame('2026-01', $calendar['from']);
+        self::assertSame('2026-12', $calendar['to']);
+        self::assertCount(12, $calendar['months']);
+        self::assertSame('2026-01', $calendar['months'][0]['yearMonth']);
+        self::assertSame(150_000, $calendar['months'][0]['actualIncomeCents']);
+        self::assertSame(10_000, $calendar['months'][0]['actualExpenseCents']);
+        self::assertSame(140_000, $calendar['months'][0]['actualNetCents']);
+        self::assertSame(200_000, $calendar['months'][0]['plannedIncomeCents']);
+        self::assertSame(40_000, $calendar['months'][0]['plannedExpenseCents']);
+        self::assertSame(150_000, $calendar['totals']['actualIncomeCents']);
+        self::assertSame(0, $calendar['months'][11]['actualIncomeCents']);
+        self::assertCount(2, $calendar['categories']);
+        // Revenus puis dépenses, alphabétique dans chaque groupe.
+        self::assertSame('Salaire', $calendar['categories'][0]['categoryName']);
+        self::assertSame('Courses', $calendar['categories'][1]['categoryName']);
+        self::assertSame(150_000, $calendar['categories'][0]['actualIncomeCents']);
+        self::assertSame(200_000, $calendar['categories'][0]['plannedIncomeCents']);
+        self::assertSame(10_000, $calendar['categories'][1]['actualExpenseCents']);
+        self::assertSame(40_000, $calendar['categories'][1]['plannedExpenseCents']);
+        self::assertCount(12, $calendar['categories'][0]['months']);
+        self::assertSame(150_000, $calendar['categories'][0]['months'][0]['actualIncomeCents']);
+        self::assertSame(10_000, $calendar['categories'][1]['months'][0]['actualExpenseCents']);
+        self::assertCount(1, $calendar['subAccounts']);
+        self::assertSame('Courant', $calendar['subAccounts'][0]['subAccountName']);
+        self::assertSame(150_000, $calendar['subAccounts'][0]['months'][0]['actualIncomeCents']);
+
+        $rolling = $this->json('GET', '/api/forecast-stats/series?anchor=2026-01&span=rolling');
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame('2025-02', $rolling['from']);
+        self::assertSame('2026-01', $rolling['to']);
+        self::assertCount(12, $rolling['months']);
+        self::assertSame(50_000, $rolling['months'][10]['actualIncomeCents']);
+        self::assertSame(200_000, $rolling['totals']['actualIncomeCents']);
+    }
+
     /**
      * @param array<string, mixed>|null $body
      *

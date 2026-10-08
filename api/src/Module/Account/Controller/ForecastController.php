@@ -158,4 +158,20 @@ final class ForecastController extends AbstractController
             return JsonRequest::error($e, Response::HTTP_BAD_REQUEST);
         }
     }
+
+    #[Route('/api/forecast-stats/series', name: 'api_forecast_stats_series', methods: ['GET'])]
+    public function series(Request $request): JsonResponse
+    {
+        $anchor = $request->query->getString('anchor');
+        if ('' === $anchor) {
+            return JsonRequest::error(new InvalidForecastException('Le paramètre anchor est requis.'), Response::HTTP_BAD_REQUEST);
+        }
+        $span = $request->query->getString('span', 'calendar');
+
+        try {
+            return new JsonResponse($this->forecasts->yearSeries($anchor, $span));
+        } catch (\InvalidArgumentException $e) {
+            return JsonRequest::error($e, Response::HTTP_BAD_REQUEST);
+        }
+    }
 }
