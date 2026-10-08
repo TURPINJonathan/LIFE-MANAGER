@@ -270,3 +270,4 @@ export const USER_THEME = {
 } as const;
 
 export const THEME_STORAGE_KEY = 'lm.theme';
+export const DISMISSED_ALERTS_STORAGE_KEY = 'lm.dismissedAlerts';
