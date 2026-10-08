@@ -12,13 +12,7 @@ import {
   SectionCard,
   TpeAmountInput,
 } from '@components';
-import {
-  BUTTON_VARIANT,
-  DIALOG_SIZE,
-  FIELD_CONTROL_CLASSES,
-  ICON_BUTTON_VARIANT,
-  PRESET_COLORS,
-} from '@constants';
+import { BUTTON_VARIANT, DIALOG_SIZE, FIELD_CONTROL_CLASSES, ICON_BUTTON_VARIANT, PRESET_COLORS } from '@constants';
 import {
   ApiError,
   archiveJob,
@@ -445,12 +439,7 @@ export function WorkSettingsPanel() {
             <h3 className="text-control font-semibold uppercase tracking-wide text-fg-muted">Contrat</h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <FormField label="Début" htmlFor="sj-start">
-                <input
-                  id="sj-start"
-                  type="date"
-                  className={FIELD_CONTROL_CLASSES}
-                  {...jobForm.register('startDate')}
-                />
+                <input id="sj-start" type="date" className={FIELD_CONTROL_CLASSES} {...jobForm.register('startDate')} />
               </FormField>
               <FormField label="Fin" htmlFor="sj-end" hint="Optionnel">
                 <input id="sj-end" type="date" className={FIELD_CONTROL_CLASSES} {...jobForm.register('endDate')} />
@@ -494,20 +483,14 @@ export function WorkSettingsPanel() {
                 />
               </FormField>
               <FormField label="Majoration HS (%)" htmlFor="sj-ot" hint="125 = +25 %">
-                <input
-                  id="sj-ot"
-                  className={FIELD_CONTROL_CLASSES}
-                  {...jobForm.register('overtimeRatePercent')}
-                />
+                <input id="sj-ot" className={FIELD_CONTROL_CLASSES} {...jobForm.register('overtimeRatePercent')} />
               </FormField>
             </div>
           </section>
 
           <section className="flex flex-col gap-3">
             <div className="flex flex-wrap items-end justify-between gap-2">
-              <h3 className="text-control font-semibold uppercase tracking-wide text-fg-muted">
-                Estimation nette
-              </h3>
+              <h3 className="text-control font-semibold uppercase tracking-wide text-fg-muted">Estimation nette</h3>
               {jobDialog?.job ? (
                 <Button
                   type="button"
@@ -530,11 +513,7 @@ export function WorkSettingsPanel() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <FormField label="Cotisations (%)" htmlFor="sj-contrib" hint="Parts salariales + CSG/CRDS">
-                <input
-                  id="sj-contrib"
-                  className={FIELD_CONTROL_CLASSES}
-                  {...jobForm.register('contributionPercent')}
-                />
+                <input id="sj-contrib" className={FIELD_CONTROL_CLASSES} {...jobForm.register('contributionPercent')} />
               </FormField>
               <FormField label="PAS (%)" htmlFor="sj-pas" hint="Prélèvement à la source">
                 <input id="sj-pas" className={FIELD_CONTROL_CLASSES} {...jobForm.register('pasPercent')} />
@@ -557,11 +536,7 @@ export function WorkSettingsPanel() {
                   className={cn(FIELD_CONTROL_CLASSES, 'tabular-nums')}
                 />
               </FormField>
-              <FormField
-                label="Autres retenues (€ / mois)"
-                htmlFor="sj-other"
-                hint="Tickets resto, etc."
-              >
+              <FormField label="Autres retenues (€ / mois)" htmlFor="sj-other" hint="Tickets resto, etc.">
                 <TpeAmountInput
                   id="sj-other"
                   value={otherDeductionAmount}

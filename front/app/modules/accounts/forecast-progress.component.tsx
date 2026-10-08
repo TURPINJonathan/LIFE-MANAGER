@@ -18,12 +18,7 @@ type ForecastProgressTrackProps = {
   variant: 'background' | 'bar';
 };
 
-export function ForecastProgressTrack({
-  percent,
-  remainingCents,
-  tone,
-  variant,
-}: ForecastProgressTrackProps) {
+export function ForecastProgressTrack({ percent, remainingCents, tone, variant }: ForecastProgressTrackProps) {
   const beyond = isForecastBeyond(percent, remainingCents);
   const fill = forecastProgressFillPercent(percent);
   const softEdge = !beyond && fill > 0 && fill < 100;

@@ -8,11 +8,7 @@ import { useAuthStore } from '@store';
 import type { LedgerTransaction } from '@app-types';
 import { cn, formatCents, formatIsoDateFr, signedAmountClass, toastFromError } from '@utils';
 
-import {
-  forecastProgressMetaClass,
-  forecastProgressRemainingLabel,
-  type BudgetTone,
-} from './forecast-budget.utils';
+import { forecastProgressMetaClass, forecastProgressRemainingLabel, type BudgetTone } from './forecast-budget.utils';
 import { ForecastProgressTrack } from './forecast-progress.component';
 
 type ForecastCategoryOperationsDialogProps = {
@@ -58,12 +54,7 @@ export function ForecastCategoryOperationsDialog({
   const toneClass = tone === 'income' ? 'text-success-strong' : 'text-error';
   const underOrOnTarget = remainingCents >= 0;
   const diffLabel = forecastProgressRemainingLabel(remainingCents, tone);
-  const diffClass =
-    remainingCents < 0
-      ? tone === 'income'
-        ? 'text-success-strong'
-        : 'text-error'
-      : 'text-fg-primary';
+  const diffClass = remainingCents < 0 ? (tone === 'income' ? 'text-success-strong' : 'text-error') : 'text-fg-primary';
   const diffValue = underOrOnTarget ? formatCents(remainingCents) : `−${formatCents(Math.abs(remainingCents))}`;
   const previousRemainingCents = previousPlannedCents - previousActualCents;
   const previousDiffValue =

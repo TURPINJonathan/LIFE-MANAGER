@@ -61,12 +61,7 @@ function fullMonthLabel(yearMonth: string): string {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function buildPath(
-  values: number[],
-  left: number,
-  plotWidth: number,
-  yFor: (value: number) => number,
-): string {
+function buildPath(values: number[], left: number, plotWidth: number, yFor: (value: number) => number): string {
   if (values.length === 0) return '';
   return values
     .map((value, index) => {
@@ -237,14 +232,7 @@ function SeriesChart({
             strokeDasharray="3 3"
           />
         ) : null}
-        <rect
-          x={padL}
-          y={padT}
-          width={plotW}
-          height={plotH}
-          fill="transparent"
-          className="cursor-crosshair"
-        />
+        <rect x={padL} y={padT} width={plotW} height={plotH} fill="transparent" className="cursor-crosshair" />
       </svg>
       {hover ? (
         <ChartTooltip
@@ -271,12 +259,8 @@ function NetChart({ months, compact, height }: { months: YearFlowMonth[]; compac
   const padB = compact ? 22 : 28;
   const plotH = height - padT - padB;
   const midY = padT + plotH / 2;
-  const actual = months.map(
-    (month) => month.actualNetCents ?? month.actualIncomeCents - month.actualExpenseCents,
-  );
-  const planned = months.map(
-    (month) => month.plannedNetCents ?? month.plannedIncomeCents - month.plannedExpenseCents,
-  );
+  const actual = months.map((month) => month.actualNetCents ?? month.actualIncomeCents - month.actualExpenseCents);
+  const planned = months.map((month) => month.plannedNetCents ?? month.plannedIncomeCents - month.plannedExpenseCents);
   const maxAbs = Math.max(1, ...actual.map(Math.abs), ...planned.map(Math.abs));
   const yFor = (value: number) => midY - (value / maxAbs) * (plotH / 2 - 4);
   const { hover, onPointerMove, onPointerLeave, plotW } = useMonthHover(months, width, padL, padR);
@@ -294,14 +278,7 @@ function NetChart({ months, compact, height }: { months: YearFlowMonth[]; compac
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
       >
-        <line
-          x1={padL}
-          x2={width - padR}
-          y1={midY}
-          y2={midY}
-          stroke="var(--border-subtle)"
-          strokeWidth={1}
-        />
+        <line x1={padL} x2={width - padR} y1={midY} y2={midY} stroke="var(--border-subtle)" strokeWidth={1} />
         <text x={padL - 6} y={padT + 4} textAnchor="end" fill="var(--fg-muted)" fontSize={10}>
           {axisEuros(maxAbs)}
         </text>
@@ -357,14 +334,7 @@ function NetChart({ months, compact, height }: { months: YearFlowMonth[]; compac
             strokeDasharray="3 3"
           />
         ) : null}
-        <rect
-          x={padL}
-          y={padT}
-          width={plotW}
-          height={plotH}
-          fill="transparent"
-          className="cursor-crosshair"
-        />
+        <rect x={padL} y={padT} width={plotW} height={plotH} fill="transparent" className="cursor-crosshair" />
       </svg>
       {hover ? (
         <ChartTooltip
@@ -412,14 +382,7 @@ function Legend() {
 }
 
 /** Courbe unique (revenus ou dépenses) pour une catégorie. */
-export function YearToneChart({
-  months,
-  tone,
-  title,
-  compact = true,
-  height = 140,
-  stroke,
-}: YearToneChartProps) {
+export function YearToneChart({ months, tone, title, compact = true, height = 140, stroke }: YearToneChartProps) {
   return (
     <SeriesChart
       title={title ?? (tone === 'income' ? 'Revenus' : 'Dépenses')}

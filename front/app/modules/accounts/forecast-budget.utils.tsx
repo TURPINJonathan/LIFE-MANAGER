@@ -205,11 +205,7 @@ export function forecastProgressBeyondBarClass(tone: BudgetTone): string {
 }
 
 /** Surface de ligne : dépassement = fond uni saturé ; sinon piste neutre + dégradé en overlay. */
-export function forecastProgressRowSurfaceClass(
-  percent: number,
-  remainingCents: number,
-  tone: BudgetTone,
-): string {
+export function forecastProgressRowSurfaceClass(percent: number, remainingCents: number, tone: BudgetTone): string {
   if (isForecastBeyond(percent, remainingCents)) {
     return tone === 'expense'
       ? 'border-2 border-error bg-error/25 dark:bg-error/30'
@@ -247,11 +243,7 @@ export function compareForecastProgress(
   return a.categoryName.localeCompare(b.categoryName, 'fr', { sensitivity: 'base' });
 }
 
-export function forecastProgressMetaClass(
-  percent: number,
-  remainingCents: number,
-  tone: BudgetTone,
-): string {
+export function forecastProgressMetaClass(percent: number, remainingCents: number, tone: BudgetTone): string {
   if (isForecastBeyond(percent, remainingCents)) {
     return tone === 'expense' ? 'font-semibold text-error' : 'font-semibold text-success-strong';
   }
@@ -265,11 +257,7 @@ export function forecastProgressRemainingLabel(remainingCents: number, tone: Bud
 }
 
 /** Badge du % : teintes alignées sur la jauge ; dépassement saturé. */
-export function forecastProgressPercentBadgeClass(
-  percent: number,
-  remainingCents: number,
-  tone: BudgetTone,
-): string {
+export function forecastProgressPercentBadgeClass(percent: number, remainingCents: number, tone: BudgetTone): string {
   if (isForecastBeyond(percent, remainingCents)) {
     return tone === 'expense' ? 'bg-error text-white' : 'bg-success text-white';
   }

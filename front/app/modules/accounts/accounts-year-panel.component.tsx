@@ -161,12 +161,7 @@ function CategoryYearCard({ row }: { row: ForecastYearCategory }) {
           <>
             <div>
               <p className="text-fg-muted">Réalisé</p>
-              <p
-                className={cn(
-                  'font-semibold',
-                  isExpense ? 'text-accent-press' : 'text-success-strong',
-                )}
-              >
+              <p className={cn('font-semibold', isExpense ? 'text-accent-press' : 'text-success-strong')}>
                 {formatCents(isExpense ? row.actualExpenseCents : row.actualIncomeCents)}
               </p>
             </div>
@@ -290,10 +285,7 @@ export function AccountsYearPanel({ anchor, span }: AccountsYearPanelProps) {
   }, [token, anchor, span]);
 
   const ready = !loading && !failed && series?.anchor === anchor && series.span === span;
-  const categories = useMemo(
-    () => (ready && series ? sortYearCategories(series.categories) : []),
-    [ready, series],
-  );
+  const categories = useMemo(() => (ready && series ? sortYearCategories(series.categories) : []), [ready, series]);
 
   if (failed) {
     return <p className="py-16 text-center text-body text-fg-muted">La vue annuelle n’a pas pu être chargée.</p>;

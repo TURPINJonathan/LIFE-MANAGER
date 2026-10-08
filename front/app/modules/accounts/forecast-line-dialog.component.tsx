@@ -178,11 +178,7 @@ export function ForecastLineDialog({
                   <span
                     className={cn(
                       'shrink-0 text-[11px] tabular-nums',
-                      forecastProgressMetaClass(
-                        editContext.consumptionPercent,
-                        editContext.remainingCents,
-                        tone,
-                      ),
+                      forecastProgressMetaClass(editContext.consumptionPercent, editContext.remainingCents, tone),
                     )}
                   >
                     {editContext.consumptionPercent}%
