@@ -161,9 +161,7 @@ export function formatMonthLabel(yearMonth: string): string {
 /** Libellé court pour une borne de période (ex. « oct. 2025 »). */
 export function formatMonthShortLabel(yearMonth: string): string {
   const [year, month] = yearMonth.split('-').map(Number);
-  return new Date(year, month - 1, 1)
-    .toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })
-    .replace('.', '');
+  return new Date(year, month - 1, 1).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }).replace('.', '');
 }
 
 /** Libellé chrome pour la période annuelle (année civile ou 12 mois). */
@@ -178,10 +176,7 @@ export function formatYearPeriodLabel(anchor: string, span: 'calendar' | 'rollin
 }
 
 /** Solde à afficher pour le mois sélectionné (fin de mois / actuel / projection). */
-export function monthDisplayBalanceCents(
-  stats: ForecastStats | null | undefined,
-  liveBalanceCents: number,
-): number {
+export function monthDisplayBalanceCents(stats: ForecastStats | null | undefined, liveBalanceCents: number): number {
   if (!stats) return liveBalanceCents;
   if (stats.meta.isPastMonth) return stats.balances.endOfMonthActualCents;
   if (stats.meta.isFutureMonth) return stats.balances.projectedRealisticCents;
@@ -286,16 +281,68 @@ export function aggregateDashboardTimeline(
 
 export type UpcomingDeadline = {
   key: string;
+  lineId: string;
   day: number;
+  /** Jour non fixé : l’échéance est portée en fin de mois. */
+  monthEnd: boolean;
   categoryName: string;
   categoryColor: string;
   categoryIcon: string;
   amountCents: number;
+  actualAmountCents: number;
   isExpense: boolean;
+  accountId: string;
+  accountName: string;
   subAccountId: string;
   subAccountName: string;
-  accountName: string;
 };
+
+function deadlineFromRow(sub: FlatSubAccount, row: ForecastStatsCategory, daysInMonth: number): UpcomingDeadline {
+  const scheduled = row.scheduledDay;
+  const rawDay = scheduled ?? daysInMonth;
+  const day = Math.min(Math.max(rawDay, 1), daysInMonth);
+  const isExpense = row.categoryKind === 'expense' || (row.categoryKind === 'both' && row.flow === 'debit');
+
+  return {
+    key: `${sub.id}-${row.lineId}`,
+    lineId: row.lineId,
+    day,
+    monthEnd: scheduled == null,
+    categoryName: row.categoryName,
+    categoryColor: row.categoryColor,
+    categoryIcon: row.categoryIcon,
+    amountCents: row.plannedAmountCents,
+    actualAmountCents: row.actualAmountCents,
+    isExpense,
+    accountId: sub.accountId,
+    accountName: sub.accountName,
+    subAccountId: sub.id,
+    subAccountName: sub.name,
+  };
+}
+
+function sortDeadlines(items: UpcomingDeadline[]): UpcomingDeadline[] {
+  return items.sort((a, b) => a.day - b.day || a.categoryName.localeCompare(b.categoryName, 'fr'));
+}
+
+/** Toutes les échéances budget du mois (y compris les jours passés). */
+export function collectMonthDeadlines(
+  subs: FlatSubAccount[],
+  statsBySubId: Record<string, ForecastStats | null>,
+): UpcomingDeadline[] {
+  const items: UpcomingDeadline[] = [];
+
+  for (const sub of subs) {
+    const stats = statsBySubId[sub.id];
+    if (!stats?.hasForecast) continue;
+    const daysInMonth = stats.meta.daysInMonth;
+    for (const row of stats.categories) {
+      items.push(deadlineFromRow(sub, row, daysInMonth));
+    }
+  }
+
+  return sortDeadlines(items);
+}
 
 /**
  * Échéances budget du mois affiché.
@@ -313,32 +360,10 @@ export function collectUpcomingDeadlines(
     return [];
   }
   const minDay = targetMonth === current ? new Date().getDate() : 1;
-  const items: UpcomingDeadline[] = [];
 
-  for (const sub of subs) {
-    const stats = statsBySubId[sub.id];
-    if (!stats?.hasForecast) continue;
-    const daysInMonth = stats.meta.daysInMonth;
-    for (const row of stats.categories) {
-      const day = row.scheduledDay ?? daysInMonth;
-      if (day < minDay) continue;
-      const isExpense = row.categoryKind === 'expense' || (row.categoryKind === 'both' && row.flow === 'debit');
-      items.push({
-        key: `${sub.id}-${row.lineId}`,
-        day,
-        categoryName: row.categoryName,
-        categoryColor: row.categoryColor,
-        categoryIcon: row.categoryIcon,
-        amountCents: row.plannedAmountCents,
-        isExpense,
-        subAccountId: sub.id,
-        subAccountName: sub.name,
-        accountName: sub.accountName,
-      });
-    }
-  }
-
-  return items.sort((a, b) => a.day - b.day || a.categoryName.localeCompare(b.categoryName, 'fr')).slice(0, limit);
+  return collectMonthDeadlines(subs, statsBySubId)
+    .filter((item) => item.day >= minDay)
+    .slice(0, limit);
 }
 
 export function aggregateDashboardForecast(

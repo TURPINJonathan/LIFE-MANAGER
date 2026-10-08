@@ -12,11 +12,21 @@ interface IDialogProps {
   onClose: () => void;
   title: string;
   icon?: string;
+  /** Contenu centré sur la ligne du titre (ex. navigation de mois). */
+  headerCenter?: ReactNode;
   children: ReactNode;
   size?: DialogSize;
 }
 
-export function Dialog({ isOpen, onClose, title, icon, children, size = DIALOG_SIZE.default }: IDialogProps) {
+export function Dialog({
+  isOpen,
+  onClose,
+  title,
+  icon,
+  headerCenter,
+  children,
+  size = DIALOG_SIZE.default,
+}: IDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   useOverlay(isOpen, onClose, dialogRef);
 
@@ -32,12 +42,22 @@ export function Dialog({ isOpen, onClose, title, icon, children, size = DIALOG_S
     >
       <Button variant={BUTTON_VARIANT.backdrop} tabIndex={-1} aria-label="Fermer" onClick={onClose} />
       <div className={DIALOG_SIZE_CLASSES[size]}>
-        <div className="flex shrink-0 items-center justify-between gap-2">
-          {icon !== undefined && <Icon name={icon} className="text-icon-sm! shrink-0 text-fg-muted" />}
-          <Typography variant="title" as="h2" className="min-w-0 flex-1">
-            {title}
-          </Typography>
-          <IconButton variant={ICON_BUTTON_VARIANT.ghost} icon="close" onClick={onClose} aria-label="Fermer" />
+        <div
+          className={cn(
+            'grid shrink-0 items-center gap-2',
+            headerCenter ? 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_auto]',
+          )}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            {icon !== undefined && <Icon name={icon} className="text-icon-sm! shrink-0 text-fg-muted" />}
+            <Typography variant="title" as="h2" className="min-w-0 truncate">
+              {title}
+            </Typography>
+          </div>
+          {headerCenter ? <div className="justify-self-center">{headerCenter}</div> : null}
+          <div className="flex justify-end">
+            <IconButton variant={ICON_BUTTON_VARIANT.ghost} icon="close" onClick={onClose} aria-label="Fermer" />
+          </div>
         </div>
         <div
           className={cn(

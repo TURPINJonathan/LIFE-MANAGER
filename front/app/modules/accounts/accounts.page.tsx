@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
-import { EmptyState, Icon, IconButton, ListCard, Popover, SectionCard, Typography } from '@components';
+import { EmptyState, Icon, IconButton, ListCard, Popover, SectionCard, Tooltip, Typography } from '@components';
 import {
   APP_PAGE_FILL_CLASSES,
   APP_PINNED_LIST_BODY_CLASSES,
@@ -20,11 +20,13 @@ import { cn, formatCents, signedAmountClass, toastFromError } from '@utils';
 
 import { AccountsYearPanel } from './accounts-year-panel.component';
 import { BalanceTimelineChart } from './balance-timeline-chart.component';
+import { DeadlinesCalendarDialog } from './deadlines-calendar-dialog.component';
 import {
   aggregateDashboardCategoryBars,
   aggregateDashboardForecast,
   aggregateDashboardTimeline,
   budgetStatusLabel,
+  collectMonthDeadlines,
   collectUpcomingDeadlines,
   formatMonthLabel,
   formatYearPeriodLabel,
@@ -191,7 +193,6 @@ export function AccountsPage() {
         const rows = await listAccounts(token);
         if (cancelled) return;
         setAccounts(rows);
-
       } catch (err) {
         if (!cancelled) {
           toastFromError(err, 'Chargement impossible.');
@@ -306,6 +307,7 @@ export function AccountsPage() {
     () => collectUpcomingDeadlines(subs, statsBySubId, 6, yearMonth),
     [subs, statsBySubId, yearMonth],
   );
+  const monthDeadlines = useMemo(() => collectMonthDeadlines(subs, statsBySubId), [subs, statsBySubId]);
 
   const dismissed = useDismissedAlertsStore((state) => state.dismissed);
   const dismissAlert = useDismissedAlertsStore((state) => state.dismiss);
@@ -366,6 +368,7 @@ export function AccountsPage() {
   const hasAnySub = subs.length > 0;
   const hasForecastData = Object.keys(statsBySubId).length > 0 && !forecastLoading;
   const [watchOpen, setWatchOpen] = useState(false);
+  const [deadlinesCalendarOpen, setDeadlinesCalendarOpen] = useState(false);
   const watchAnchorRef = useRef<HTMLButtonElement>(null);
 
   return (
@@ -789,6 +792,17 @@ export function AccountsPage() {
                 tone="brand"
                 bordered={false}
                 className="flex min-w-0 flex-col lg:col-span-1"
+                headerAction={
+                  <Tooltip content="Calendrier du mois">
+                    <IconButton
+                      variant={ICON_BUTTON_VARIANT.ghost}
+                      icon="calendar_month"
+                      className="size-8"
+                      aria-label="Ouvrir le calendrier des échéances"
+                      onClick={() => setDeadlinesCalendarOpen(true)}
+                    />
+                  </Tooltip>
+                }
               >
                 {forecastLoading ? (
                   <p className="py-6 text-center text-body text-fg-muted">Chargement…</p>
@@ -890,6 +904,14 @@ export function AccountsPage() {
           </>
         )}
       </div>
+      <DeadlinesCalendarDialog
+        open={deadlinesCalendarOpen}
+        onClose={() => setDeadlinesCalendarOpen(false)}
+        yearMonth={yearMonth}
+        deadlines={monthDeadlines}
+        subs={subs}
+        token={token}
+      />
     </div>
   );
 }

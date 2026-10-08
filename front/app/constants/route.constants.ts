@@ -21,12 +21,18 @@ export function appTitle(...parts: Array<string | null | undefined>): string {
   return cleaned.length > 0 ? `${cleaned.join(' · ')} · ${APP_NAME}` : APP_NAME;
 }
 
-export function accountLedgerPath(subAccountId: string, view?: 'operations' | 'budget'): string {
+export function accountLedgerPath(
+  subAccountId: string,
+  view?: 'operations' | 'budget',
+  options?: { yearMonth?: string; lineId?: string },
+): string {
   const base = `/comptes/${subAccountId}`;
-  if (!view || view === 'operations') {
-    return base;
-  }
-  return `${base}?vue=budget`;
+  const params = new URLSearchParams();
+  if (view === 'budget') params.set('vue', 'budget');
+  if (options?.yearMonth) params.set('mois', options.yearMonth);
+  if (options?.lineId) params.set('ligne', options.lineId);
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
 }
 
 export function settingsPath(

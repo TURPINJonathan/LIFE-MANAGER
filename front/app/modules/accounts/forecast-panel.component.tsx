@@ -75,6 +75,9 @@ type ForecastPanelProps = {
   onChromeActionsChange?: (actions: ForecastChromeActions | null) => void;
   yearMonth?: string;
   onYearMonthChange?: (yearMonth: string) => void;
+  /** Ouvre cette ligne de budget une fois le mois chargé, puis le signale. */
+  focusLineId?: string | null;
+  onFocusLineHandled?: () => void;
 };
 
 export type ForecastChromeActions = {
@@ -97,6 +100,8 @@ export function ForecastPanel({
   onChromeActionsChange,
   yearMonth: yearMonthProp,
   onYearMonthChange,
+  focusLineId,
+  onFocusLineHandled,
 }: ForecastPanelProps) {
   const token = useAuthStore((state) => state.token);
   const [internalYearMonth, setInternalYearMonth] = useState(currentYearMonth);
@@ -144,6 +149,18 @@ export function ForecastPanel({
     void reload(yearMonth);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, subAccountId, yearMonth]);
+
+  const handleFocusLine = useEffectEvent(() => {
+    onFocusLineHandled?.();
+  });
+
+  useEffect(() => {
+    if (!focusLineId || loading) return;
+    if (forecast && forecast.yearMonth !== yearMonth) return;
+    const line = forecast?.lines.find((item) => item.id === focusLineId);
+    if (line) setLineDialog({ mode: 'edit', lineId: line.id });
+    handleFocusLine();
+  }, [focusLineId, loading, forecast, yearMonth]);
 
   const formValuesToInput = (values: ForecastLineFormValues): ForecastLineInput | null => {
     const cents = parseEurosToCents(values.amount);

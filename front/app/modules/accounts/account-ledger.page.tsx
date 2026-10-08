@@ -158,6 +158,13 @@ export function AccountLedgerPage() {
   const setBudgetMonth = (next: string) => {
     setSearchParams({ vue: 'budget', mois: next });
   };
+  const focusLineId = searchParams.get('ligne');
+  const consumeFocusLine = () => {
+    if (!searchParams.get('ligne')) return;
+    const params = new URLSearchParams(searchParams);
+    params.delete('ligne');
+    setSearchParams(params, { replace: true });
+  };
 
   const reload = async () => {
     if (!token || !subAccountId) return;
@@ -628,6 +635,8 @@ export function AccountLedgerPage() {
             categories={categories}
             yearMonth={budgetMonth}
             onYearMonthChange={setBudgetMonth}
+            focusLineId={focusLineId}
+            onFocusLineHandled={consumeFocusLine}
             onChromeActionsChange={setBudgetActions}
             onCategoryCreated={(category) => {
               setCategories((prev) => [...prev, category].sort((a, b) => a.name.localeCompare(b.name, 'fr')));
@@ -896,7 +905,9 @@ export function AccountLedgerPage() {
                   <DateField
                     id="tx-op"
                     value={form.watch('operationDate')}
-                    onChange={(next) => form.setValue('operationDate', next, { shouldDirty: true, shouldValidate: true })}
+                    onChange={(next) =>
+                      form.setValue('operationDate', next, { shouldDirty: true, shouldValidate: true })
+                    }
                   />
                   <input type="hidden" {...form.register('operationDate', { required: true })} />
                 </FormField>
