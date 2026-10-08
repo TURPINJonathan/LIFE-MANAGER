@@ -19,14 +19,7 @@ const KINDS: { value: TimesheetPdfKind; label: string }[] = [
   { value: 'blank', label: 'Pointage vierge' },
 ];
 
-export function TimesheetPdfDialog({
-  isOpen,
-  onClose,
-  token,
-  jobId,
-  yearMonth,
-  monthLabel,
-}: TimesheetPdfDialogProps) {
+export function TimesheetPdfDialog({ isOpen, onClose, token, jobId, yearMonth, monthLabel }: TimesheetPdfDialogProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const objectUrlRef = useRef<string | null>(null);
   const [kind, setKind] = useState<TimesheetPdfKind>('filled');

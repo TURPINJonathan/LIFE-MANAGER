@@ -102,6 +102,18 @@ class Job
     #[ORM\Column(type: Types::INTEGER)]
     private int $pasRateBps;
 
+    /** Part salariale mutuelle (€/mois), en centimes. */
+    #[ORM\Column(type: Types::INTEGER)]
+    private int $monthlyMutuelleCents = 0;
+
+    /** Part salariale prévoyance (€/mois), en centimes. */
+    #[ORM\Column(type: Types::INTEGER)]
+    private int $monthlyPrevoyanceCents = 0;
+
+    /** Autres retenues mensuelles (tickets resto, etc.), en centimes. */
+    #[ORM\Column(type: Types::INTEGER)]
+    private int $monthlyOtherDeductionCents = 0;
+
     #[ORM\Column(length: 32, enumType: NetEstimateMode::class)]
     private NetEstimateMode $netEstimateMode;
 
@@ -138,6 +150,9 @@ class Job
         $this->overtimeRateBps = self::DEFAULT_OVERTIME_RATE_BPS;
         $this->employeeContributionRateBps = self::DEFAULT_CONTRIBUTION_RATE_BPS;
         $this->pasRateBps = 0;
+        $this->monthlyMutuelleCents = 0;
+        $this->monthlyPrevoyanceCents = 0;
+        $this->monthlyOtherDeductionCents = 0;
         $this->netEstimateMode = NetEstimateMode::Params;
         $this->createdAt = new \DateTimeImmutable();
     }
@@ -376,6 +391,42 @@ class Job
     public function setPasRateBps(int $pasRateBps): void
     {
         $this->pasRateBps = $pasRateBps;
+    }
+
+    public function getMonthlyMutuelleCents(): int
+    {
+        return $this->monthlyMutuelleCents;
+    }
+
+    public function setMonthlyMutuelleCents(int $monthlyMutuelleCents): void
+    {
+        $this->monthlyMutuelleCents = max(0, $monthlyMutuelleCents);
+    }
+
+    public function getMonthlyPrevoyanceCents(): int
+    {
+        return $this->monthlyPrevoyanceCents;
+    }
+
+    public function setMonthlyPrevoyanceCents(int $monthlyPrevoyanceCents): void
+    {
+        $this->monthlyPrevoyanceCents = max(0, $monthlyPrevoyanceCents);
+    }
+
+    public function getMonthlyOtherDeductionCents(): int
+    {
+        return $this->monthlyOtherDeductionCents;
+    }
+
+    public function setMonthlyOtherDeductionCents(int $monthlyOtherDeductionCents): void
+    {
+        $this->monthlyOtherDeductionCents = max(0, $monthlyOtherDeductionCents);
+    }
+
+    /** Total des retenues mensuelles fixes (mutuelle + prévoyance + autres). */
+    public function getMonthlyFixedDeductionsCents(): int
+    {
+        return $this->monthlyMutuelleCents + $this->monthlyPrevoyanceCents + $this->monthlyOtherDeductionCents;
     }
 
     public function getNetEstimateMode(): NetEstimateMode

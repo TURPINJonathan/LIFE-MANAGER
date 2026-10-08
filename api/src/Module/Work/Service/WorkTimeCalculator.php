@@ -70,12 +70,13 @@ final class WorkTimeCalculator
      *   estimatedGrossCents: int,
      *   estimatedNetBeforeTaxCents: int,
      *   estimatedPasCents: int,
+     *   estimatedFixedDeductionsCents: int,
      *   estimatedNetPayableCents: int,
      *   employeeContributionRateBps: int,
      *   pasRateBps: int
      * }
      */
-    public function summarize(Job $job, array $entries): array
+    public function summarize(Job $job, array $entries, ?int $periodDays = null): array
     {
         $worked = 0;
         foreach ($entries as $entry) {
@@ -104,21 +105,23 @@ final class WorkTimeCalculator
             + (int) round($ot1 * $hourly * $rate1 / 60 / 10000)
             + (int) round($ot2 * $hourly * $rate2 / 60 / 10000);
 
-        $net = $this->netEstimator->estimateFromGross($job, $gross);
+        $fixed = $this->proratedFixedDeductions($job, $periodDays);
+        $net = $this->netEstimator->estimateFromGross($job, $gross, $fixed);
 
         return [
-            'workedMinutes'               => $worked,
-            'contractWeeklyMinutes'       => $contract,
-            'regularMinutes'              => $regular,
-            'overtimeMinutes'             => $overtime,
-            'overtime1Minutes'            => $ot1,
-            'overtime2Minutes'            => $ot2,
-            'estimatedGrossCents'         => $net['estimatedGrossCents'],
-            'estimatedNetBeforeTaxCents'  => $net['estimatedNetBeforeTaxCents'],
-            'estimatedPasCents'           => $net['estimatedPasCents'],
-            'estimatedNetPayableCents'    => $net['estimatedNetPayableCents'],
-            'employeeContributionRateBps' => $net['employeeContributionRateBps'],
-            'pasRateBps'                  => $net['pasRateBps'],
+            'workedMinutes'                  => $worked,
+            'contractWeeklyMinutes'          => $contract,
+            'regularMinutes'                 => $regular,
+            'overtimeMinutes'                => $overtime,
+            'overtime1Minutes'               => $ot1,
+            'overtime2Minutes'               => $ot2,
+            'estimatedGrossCents'            => $net['estimatedGrossCents'],
+            'estimatedNetBeforeTaxCents'     => $net['estimatedNetBeforeTaxCents'],
+            'estimatedPasCents'              => $net['estimatedPasCents'],
+            'estimatedFixedDeductionsCents'  => $net['estimatedFixedDeductionsCents'],
+            'estimatedNetPayableCents'       => $net['estimatedNetPayableCents'],
+            'employeeContributionRateBps'    => $net['employeeContributionRateBps'],
+            'pasRateBps'                     => $net['pasRateBps'],
         ];
     }
 
@@ -129,19 +132,18 @@ final class WorkTimeCalculator
      *
      * @return array<string, int>
      */
-    /**
-     * @param list<TimeEntry> $entries
-     *
-     * @return array<string, int>
-     */
-    public function summarizeWithContractBudget(Job $job, array $entries, int $contractBudgetMinutes): array
-    {
+    public function summarizeWithContractBudget(
+        Job $job,
+        array $entries,
+        int $contractBudgetMinutes,
+        ?int $periodDays = null,
+    ): array {
         $worked = 0;
         foreach ($entries as $entry) {
             $worked += $this->workedMinutes($entry);
         }
 
-        return $this->summarizeTotalMinutes($job, $worked, $contractBudgetMinutes);
+        return $this->summarizeTotalMinutes($job, $worked, $contractBudgetMinutes, $periodDays);
     }
 
     /**
@@ -149,21 +151,29 @@ final class WorkTimeCalculator
      *
      * @return array<string, int>
      */
-    public function summarizePlanWithContractBudget(Job $job, array $entries, int $contractBudgetMinutes): array
-    {
+    public function summarizePlanWithContractBudget(
+        Job $job,
+        array $entries,
+        int $contractBudgetMinutes,
+        ?int $periodDays = null,
+    ): array {
         $planned = 0;
         foreach ($entries as $entry) {
             $planned += $this->plannedMinutes($entry);
         }
 
-        return $this->summarizeTotalMinutes($job, $planned, $contractBudgetMinutes);
+        return $this->summarizeTotalMinutes($job, $planned, $contractBudgetMinutes, $periodDays);
     }
 
     /**
      * @return array<string, int>
      */
-    public function summarizeTotalMinutes(Job $job, int $worked, int $contractBudgetMinutes): array
-    {
+    public function summarizeTotalMinutes(
+        Job $job,
+        int $worked,
+        int $contractBudgetMinutes,
+        ?int $periodDays = null,
+    ): array {
         $contract = max(0, $contractBudgetMinutes);
         $worked = max(0, $worked);
         $overtime = max(0, $worked - $contract);
@@ -191,22 +201,38 @@ final class WorkTimeCalculator
             + (int) round($ot1 * $hourly * $rate1 / 60 / 10000)
             + (int) round($ot2 * $hourly * $rate2 / 60 / 10000);
 
-        $net = $this->netEstimator->estimateFromGross($job, $gross);
+        $fixed = $this->proratedFixedDeductions($job, $periodDays);
+        $net = $this->netEstimator->estimateFromGross($job, $gross, $fixed);
 
         return [
-            'workedMinutes'               => $worked,
-            'contractMinutes'             => $contract,
-            'regularMinutes'              => $regular,
-            'overtimeMinutes'             => $overtime,
-            'overtime1Minutes'            => $ot1,
-            'overtime2Minutes'            => $ot2,
-            'estimatedGrossCents'         => $net['estimatedGrossCents'],
-            'estimatedNetBeforeTaxCents'  => $net['estimatedNetBeforeTaxCents'],
-            'estimatedPasCents'           => $net['estimatedPasCents'],
-            'estimatedNetPayableCents'    => $net['estimatedNetPayableCents'],
-            'employeeContributionRateBps' => $net['employeeContributionRateBps'],
-            'pasRateBps'                  => $net['pasRateBps'],
+            'workedMinutes'                  => $worked,
+            'contractMinutes'                => $contract,
+            'regularMinutes'                 => $regular,
+            'overtimeMinutes'                => $overtime,
+            'overtime1Minutes'               => $ot1,
+            'overtime2Minutes'               => $ot2,
+            'estimatedGrossCents'            => $net['estimatedGrossCents'],
+            'estimatedNetBeforeTaxCents'     => $net['estimatedNetBeforeTaxCents'],
+            'estimatedPasCents'              => $net['estimatedPasCents'],
+            'estimatedFixedDeductionsCents'  => $net['estimatedFixedDeductionsCents'],
+            'estimatedNetPayableCents'       => $net['estimatedNetPayableCents'],
+            'employeeContributionRateBps'    => $net['employeeContributionRateBps'],
+            'pasRateBps'                     => $net['pasRateBps'],
         ];
+    }
+
+    /**
+     * Retenues mensuelles (mutuelle, prévoyance, autres) proratisées sur la période
+     * (base 30 jours, plafonnée à un mois).
+     */
+    private function proratedFixedDeductions(Job $job, ?int $periodDays): int
+    {
+        $monthly = $job->getMonthlyFixedDeductionsCents();
+        if ($monthly <= 0 || null === $periodDays || $periodDays <= 0) {
+            return 0;
+        }
+
+        return (int) round($monthly * min(1.0, $periodDays / 30));
     }
 
     /**

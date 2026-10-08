@@ -160,6 +160,8 @@ export function JobDetailPage() {
   const [activeLane, setActiveLane] = useState<'planned' | 'actual'>('actual');
   const [plannedDraft, setPlannedDraft] = useState<DayLaneDraft>(emptyLane);
   const [actualDraft, setActualDraft] = useState<DayLaneDraft>(emptyLane);
+  const [plannedDirty, setPlannedDirty] = useState(false);
+  const [actualDirty, setActualDirty] = useState(false);
 
   const [docDialog, setDocDialog] = useState(false);
   const [docKind, setDocKind] = useState<WorkDocumentKind>('payslip');
@@ -251,6 +253,8 @@ export function JobDetailPage() {
     const entry = entries.find((e) => e.workDate === workDate) ?? null;
     setPlannedDraft(laneFromPlan(plan));
     setActualDraft(laneFromEntry(entry));
+    setPlannedDirty(false);
+    setActualDirty(false);
     setDayDate(workDate);
     setActiveLane(preferLane ?? (job?.timeTrackingEnabled === false ? 'planned' : 'actual'));
     setDayOpen(true);
@@ -263,33 +267,40 @@ export function JobDetailPage() {
       pauseMinutes: plannedDraft.pauseMinutes,
       notes: plannedDraft.notes,
     }));
+    setActualDirty(true);
     setActiveLane('actual');
   };
 
   const closeDay = () => setDayOpen(false);
 
   const saveDayLane = async () => {
-    if (!token || !jobId) return;
+    if (!token || !jobId || !job) return;
     setBusy(true);
     try {
-      const draft = activeLane === 'planned' ? plannedDraft : actualDraft;
-      if (activeLane === 'planned') {
+      const tracking = job.timeTrackingEnabled;
+      const nothingDirty = !plannedDirty && !actualDirty;
+      const shouldSavePlanned = !tracking || plannedDirty || (nothingDirty && activeLane === 'planned');
+      const shouldSaveActual = tracking && (actualDirty || (nothingDirty && activeLane === 'actual'));
+
+      if (shouldSavePlanned) {
         await upsertPlanEntry(token, jobId, {
           workDate: dayDate,
-          segments: draft.segments,
-          pauseMinutes: draft.pauseMinutes,
-          notes: draft.notes || null,
+          segments: plannedDraft.segments,
+          pauseMinutes: plannedDraft.pauseMinutes,
+          notes: plannedDraft.notes || null,
         });
-        toastSuccess('Planning enregistré.');
-      } else {
+      }
+      if (shouldSaveActual) {
         await upsertTimeEntry(token, jobId, {
           workDate: dayDate,
-          segments: draft.segments,
-          pauseMinutes: draft.pauseMinutes,
-          notes: draft.notes || null,
+          segments: actualDraft.segments,
+          pauseMinutes: actualDraft.pauseMinutes,
+          notes: actualDraft.notes || null,
         });
-        toastSuccess('Pointage enregistré.');
       }
+      if (shouldSavePlanned && shouldSaveActual) toastSuccess('Journée enregistrée.');
+      else if (shouldSavePlanned) toastSuccess('Planning enregistré.');
+      else toastSuccess('Pointage enregistré.');
       closeDay();
       await loadMonthData();
     } catch (err) {
@@ -722,16 +733,20 @@ export function JobDetailPage() {
         shortcuts={shortcuts}
         timeTrackingEnabled={job.timeTrackingEnabled}
         busy={busy}
-        activeLane={activeLane}
-        onActiveLaneChange={setActiveLane}
-        onChangePlanned={setPlannedDraft}
-        onChangeActual={setActualDraft}
+        onChangePlanned={(next) => {
+          setPlannedDraft(next);
+          setPlannedDirty(true);
+        }}
+        onChangeActual={(next) => {
+          setActualDraft(next);
+          setActualDirty(true);
+        }}
         onCopyPlannedToActual={copyPlannedToActual}
         onSave={() => void saveDayLane()}
-        onDelete={() => {
-          if (activeLane === 'planned' && plannedDraft.existingId) {
+        onDelete={(lane) => {
+          if (lane === 'planned' && plannedDraft.existingId) {
             setPendingDelete({ type: 'plan', id: plannedDraft.existingId, workDate: dayDate });
-          } else if (activeLane === 'actual' && actualDraft.existingId) {
+          } else if (lane === 'actual' && actualDraft.existingId) {
             setPendingDelete({ type: 'entry', id: actualDraft.existingId, workDate: dayDate });
           }
         }}

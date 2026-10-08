@@ -185,6 +185,9 @@ final class JobManager
             'overtimeThresholdWeeklyMinutes' => $job->getOvertimeThresholdWeeklyMinutes(),
             'employeeContributionRateBps'    => $job->getEmployeeContributionRateBps(),
             'pasRateBps'                     => $job->getPasRateBps(),
+            'monthlyMutuelleCents'           => $job->getMonthlyMutuelleCents(),
+            'monthlyPrevoyanceCents'         => $job->getMonthlyPrevoyanceCents(),
+            'monthlyOtherDeductionCents'     => $job->getMonthlyOtherDeductionCents(),
             'netEstimateMode'                => $job->getNetEstimateMode()->value,
             'archivedAt'                     => $job->getArchivedAt()?->format(\DateTimeInterface::ATOM),
             'createdAt'                      => $job->getCreatedAt()->format(\DateTimeInterface::ATOM),
@@ -263,6 +266,27 @@ final class JobManager
                 throw new InvalidWorkException('pasRateBps doit être entre 0 et 10000.');
             }
             $job->setPasRateBps($bps);
+        }
+        if (isset($data['monthlyMutuelleCents'])) {
+            $cents = (int) $data['monthlyMutuelleCents'];
+            if ($cents < 0) {
+                throw new InvalidWorkException('monthlyMutuelleCents doit être ≥ 0.');
+            }
+            $job->setMonthlyMutuelleCents($cents);
+        }
+        if (isset($data['monthlyPrevoyanceCents'])) {
+            $cents = (int) $data['monthlyPrevoyanceCents'];
+            if ($cents < 0) {
+                throw new InvalidWorkException('monthlyPrevoyanceCents doit être ≥ 0.');
+            }
+            $job->setMonthlyPrevoyanceCents($cents);
+        }
+        if (isset($data['monthlyOtherDeductionCents'])) {
+            $cents = (int) $data['monthlyOtherDeductionCents'];
+            if ($cents < 0) {
+                throw new InvalidWorkException('monthlyOtherDeductionCents doit être ≥ 0.');
+            }
+            $job->setMonthlyOtherDeductionCents($cents);
         }
         if (isset($data['netEstimateMode'])) {
             $job->setNetEstimateMode($this->parseEnum(NetEstimateMode::class, $data['netEstimateMode'], 'netEstimateMode'));

@@ -12,23 +12,25 @@ use Symfony\Component\DependencyInjection\Attribute\AsAlias;
 #[AsAlias(IGrossToNetEstimator::class)]
 final class LocalGrossToNetEstimator implements IGrossToNetEstimator
 {
-    public function estimateFromGross(Job $job, int $grossCents): array
+    public function estimateFromGross(Job $job, int $grossCents, int $fixedDeductionCents = 0): array
     {
         $grossCents = max(0, $grossCents);
+        $fixedDeductionCents = max(0, $fixedDeductionCents);
         $contributionBps = max(0, min(10000, $job->getEmployeeContributionRateBps()));
         $pasBps = max(0, min(10000, $job->getPasRateBps()));
 
         $netBeforeTax = (int) round($grossCents * (10000 - $contributionBps) / 10000);
         $pasCents = (int) round($netBeforeTax * $pasBps / 10000);
-        $netPayable = $netBeforeTax - $pasCents;
+        $netPayable = max(0, $netBeforeTax - $pasCents - $fixedDeductionCents);
 
         return [
-            'estimatedGrossCents'         => $grossCents,
-            'estimatedNetBeforeTaxCents'  => $netBeforeTax,
-            'estimatedPasCents'           => $pasCents,
-            'estimatedNetPayableCents'    => $netPayable,
-            'employeeContributionRateBps' => $contributionBps,
-            'pasRateBps'                  => $pasBps,
+            'estimatedGrossCents'            => $grossCents,
+            'estimatedNetBeforeTaxCents'     => $netBeforeTax,
+            'estimatedPasCents'              => $pasCents,
+            'estimatedFixedDeductionsCents'  => $fixedDeductionCents,
+            'estimatedNetPayableCents'       => $netPayable,
+            'employeeContributionRateBps'    => $contributionBps,
+            'pasRateBps'                     => $pasBps,
         ];
     }
 

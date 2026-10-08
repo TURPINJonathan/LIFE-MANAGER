@@ -61,6 +61,9 @@ export type WorkJob = {
   overtimeThresholdWeeklyMinutes: number | null;
   employeeContributionRateBps: number;
   pasRateBps: number;
+  monthlyMutuelleCents: number;
+  monthlyPrevoyanceCents: number;
+  monthlyOtherDeductionCents: number;
   netEstimateMode: NetEstimateMode;
   archivedAt: string | null;
   createdAt: string;
@@ -134,6 +137,7 @@ export type TimeStatsSummary = {
   estimatedGrossCents: number;
   estimatedNetBeforeTaxCents: number;
   estimatedPasCents: number;
+  estimatedFixedDeductionsCents: number;
   estimatedNetPayableCents: number;
   employeeContributionRateBps: number;
   pasRateBps: number;

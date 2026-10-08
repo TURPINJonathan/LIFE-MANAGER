@@ -13,12 +13,13 @@ interface IGrossToNetEstimator
      *   estimatedGrossCents: int,
      *   estimatedNetBeforeTaxCents: int,
      *   estimatedPasCents: int,
+     *   estimatedFixedDeductionsCents: int,
      *   estimatedNetPayableCents: int,
      *   employeeContributionRateBps: int,
      *   pasRateBps: int
      * }
      */
-    public function estimateFromGross(Job $job, int $grossCents): array;
+    public function estimateFromGross(Job $job, int $grossCents, int $fixedDeductionCents = 0): array;
 
     /**
      * Suggest an employee contribution rate (bps) for the job without persisting it.

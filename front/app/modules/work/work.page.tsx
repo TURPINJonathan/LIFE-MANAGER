@@ -13,7 +13,7 @@ import {
   workJobPath,
 } from '@constants';
 import { fetchWorkDashboard } from '@services';
-import { useAuthStore } from '@store';
+import { useAuthStore, useDismissedAlertsStore } from '@store';
 import type { WorkDashboard } from '@app-types';
 import { cn, formatCents, toastFromError } from '@utils';
 
@@ -108,7 +108,17 @@ export function WorkPage() {
   }, [token, yearMonth]);
 
   const hasJobs = (dashboard?.workers ?? []).some((w) => w.jobs.length > 0);
-  const alerts = dashboard?.alerts ?? [];
+  const dismissed = useDismissedAlertsStore((state) => state.dismissed);
+  const dismissAlert = useDismissedAlertsStore((state) => state.dismiss);
+  const alerts = useMemo(() => {
+    const rows = dashboard?.alerts ?? [];
+    return rows
+      .map((alert) => ({
+        ...alert,
+        dismissKey: `work:${alert.jobId}:${alert.kind}:${alert.value}`,
+      }))
+      .filter((alert) => !dismissed[alert.dismissKey]);
+  }, [dashboard?.alerts, dismissed]);
 
   return (
     <div className={APP_PAGE_FILL_CLASSES}>
@@ -169,7 +179,10 @@ export function WorkPage() {
                   <li key={`${alert.jobId}-${alert.kind}-${i}`}>
                     <Link
                       to={workJobPath(alert.jobId)}
-                      onClick={() => setAlertsOpen(false)}
+                      onClick={() => {
+                        dismissAlert(alert.dismissKey);
+                        setAlertsOpen(false);
+                      }}
                       className="flex items-center justify-between gap-3 rounded-control px-2 py-2 hover:bg-subtle"
                     >
                       <span className="min-w-0">

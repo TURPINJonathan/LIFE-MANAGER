@@ -21,13 +21,11 @@ type WorkDayDialogProps = {
   shortcuts: TimeShortcut[];
   timeTrackingEnabled: boolean;
   busy?: boolean;
-  activeLane: 'planned' | 'actual';
-  onActiveLaneChange: (lane: 'planned' | 'actual') => void;
   onChangePlanned: (next: DayLaneDraft) => void;
   onChangeActual: (next: DayLaneDraft) => void;
   onCopyPlannedToActual: () => void;
   onSave: () => void;
-  onDelete: () => void;
+  onDelete: (lane: 'planned' | 'actual') => void;
 };
 
 function emptySegment(): TimeSegmentInput {
@@ -52,11 +50,13 @@ function LaneEditor({
   onChange,
   shortcuts,
   showShortcuts,
+  idPrefix,
 }: {
   draft: DayLaneDraft;
   onChange: (next: DayLaneDraft) => void;
   shortcuts: TimeShortcut[];
   showShortcuts: boolean;
+  idPrefix: string;
 }) {
   const segments = draft.segments.length > 0 ? draft.segments : [emptySegment()];
 
@@ -87,9 +87,9 @@ function LaneEditor({
       <div className="flex flex-col gap-2 rounded-control border border-border-subtle bg-page p-3 dark:bg-elevated">
         {segments.map((segment, index) => (
           <div key={index} className="grid grid-cols-[1fr_auto_1fr_auto] items-end gap-2">
-            <FormField label={index === 0 ? 'Début' : undefined} htmlFor={`lane-start-${index}`}>
+            <FormField label={index === 0 ? 'Début' : undefined} htmlFor={`${idPrefix}-start-${index}`}>
               <input
-                id={`lane-start-${index}`}
+                id={`${idPrefix}-start-${index}`}
                 type="time"
                 className={FIELD_CONTROL_CLASSES}
                 value={segment.start}
@@ -102,9 +102,9 @@ function LaneEditor({
               />
             </FormField>
             <span className="mb-2.5 text-fg-muted">→</span>
-            <FormField label={index === 0 ? 'Fin' : undefined} htmlFor={`lane-end-${index}`}>
+            <FormField label={index === 0 ? 'Fin' : undefined} htmlFor={`${idPrefix}-end-${index}`}>
               <input
-                id={`lane-end-${index}`}
+                id={`${idPrefix}-end-${index}`}
                 type="time"
                 className={FIELD_CONTROL_CLASSES}
                 value={segment.end}
@@ -143,10 +143,10 @@ function LaneEditor({
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <FormField label="Pause (min)" htmlFor="lane-pause">
+      <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
+        <FormField label="Pause (min)" htmlFor={`${idPrefix}-pause`}>
           <input
-            id="lane-pause"
+            id={`${idPrefix}-pause`}
             type="number"
             min={0}
             className={FIELD_CONTROL_CLASSES}
@@ -154,9 +154,9 @@ function LaneEditor({
             onChange={(e) => onChange({ ...draft, pauseMinutes: Number(e.target.value) || 0 })}
           />
         </FormField>
-        <FormField label="Notes" htmlFor="lane-notes">
+        <FormField label="Notes" htmlFor={`${idPrefix}-notes`}>
           <input
-            id="lane-notes"
+            id={`${idPrefix}-notes`}
             className={FIELD_CONTROL_CLASSES}
             value={draft.notes}
             onChange={(e) => onChange({ ...draft, notes: e.target.value })}
@@ -173,6 +173,50 @@ function LaneEditor({
   );
 }
 
+function LaneColumn({
+  title,
+  idPrefix,
+  draft,
+  onChange,
+  shortcuts,
+  busy,
+  onDelete,
+}: {
+  title: string;
+  idPrefix: string;
+  draft: DayLaneDraft;
+  onChange: (next: DayLaneDraft) => void;
+  shortcuts: TimeShortcut[];
+  busy: boolean;
+  onDelete?: () => void;
+}) {
+  return (
+    <section className="flex min-w-0 flex-col gap-3">
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-medium tracking-wide text-fg-muted uppercase">{title}</p>
+          <p className="text-title font-semibold tabular-nums">
+            {formatMinutes(segmentSpanMinutes(draft.segments, draft.pauseMinutes))}
+          </p>
+        </div>
+        {onDelete ? (
+          <Button
+            type="button"
+            variant={BUTTON_VARIANT.dangerOutline}
+            fullWidth={false}
+            className="h-9 w-auto px-3"
+            disabled={busy}
+            onClick={onDelete}
+          >
+            Supprimer
+          </Button>
+        ) : null}
+      </div>
+      <LaneEditor draft={draft} onChange={onChange} shortcuts={shortcuts} showShortcuts idPrefix={idPrefix} />
+    </section>
+  );
+}
+
 export function WorkDayDialog({
   isOpen,
   onClose,
@@ -182,110 +226,84 @@ export function WorkDayDialog({
   shortcuts,
   timeTrackingEnabled,
   busy = false,
-  activeLane,
-  onActiveLaneChange,
   onChangePlanned,
   onChangeActual,
   onCopyPlannedToActual,
   onSave,
   onDelete,
 }: WorkDayDialogProps) {
-  const canDelete = activeLane === 'planned' ? Boolean(planned.existingId) : Boolean(actual.existingId);
-  const canCopyPlanned = timeTrackingEnabled && Boolean(planned.existingId);
+  const canCopyPlanned = timeTrackingEnabled && planned.segments.length > 0;
 
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} title="Journée" icon="schedule" size={DIALOG_SIZE.large}>
+    <Dialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Journée"
+      icon="schedule"
+      size={timeTrackingEnabled ? DIALOG_SIZE.wide : DIALOG_SIZE.large}
+    >
       <div className="mt-2 flex flex-col gap-4">
         <p className="text-control text-fg-muted">{formatIsoDateFr(workDate, { weekday: 'long' })}</p>
 
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => onActiveLaneChange('planned')}
-            className={cn(
-              'rounded-control border px-3 py-2 text-left transition',
-              activeLane === 'planned'
-                ? 'border-accent bg-accent-tint'
-                : 'border-border-subtle bg-page hover:bg-subtle dark:bg-elevated',
-            )}
-          >
-            <p className="text-[11px] text-fg-muted">Prévu</p>
-            <p className="font-semibold tabular-nums">
-              {planned.existingId ? formatMinutes(segmentSpanMinutes(planned.segments, planned.pauseMinutes)) : '—'}
-            </p>
-          </button>
-          <button
-            type="button"
-            disabled={!timeTrackingEnabled}
-            onClick={() => onActiveLaneChange('actual')}
-            className={cn(
-              'rounded-control border px-3 py-2 text-left transition',
-              !timeTrackingEnabled && 'cursor-not-allowed opacity-50',
-              activeLane === 'actual'
-                ? 'border-accent bg-accent-tint'
-                : 'border-border-subtle bg-page hover:bg-subtle dark:bg-elevated',
-            )}
-          >
-            <p className="text-[11px] text-fg-muted">Réel</p>
-            <p className="font-semibold tabular-nums">
-              {actual.existingId ? formatMinutes(segmentSpanMinutes(actual.segments, actual.pauseMinutes)) : '—'}
-            </p>
-          </button>
+        <div className={cn('grid items-start gap-6', timeTrackingEnabled && 'lg:grid-cols-2')}>
+          <LaneColumn
+            title="Prévu"
+            idPrefix="planned"
+            draft={planned}
+            onChange={onChangePlanned}
+            shortcuts={shortcuts}
+            busy={busy}
+            onDelete={planned.existingId ? () => onDelete('planned') : undefined}
+          />
+          {timeTrackingEnabled ? (
+            <LaneColumn
+              title="Réel"
+              idPrefix="actual"
+              draft={actual}
+              onChange={onChangeActual}
+              shortcuts={shortcuts}
+              busy={busy}
+              onDelete={actual.existingId ? () => onDelete('actual') : undefined}
+            />
+          ) : null}
         </div>
 
-        {timeTrackingEnabled ? (
-          <Button
-            type="button"
-            variant={BUTTON_VARIANT.neutral}
-            fullWidth={false}
-            className="h-9 w-auto self-start px-2.5"
-            disabled={busy || !canCopyPlanned}
-            onClick={onCopyPlannedToActual}
-          >
-            <Icon name="content_copy" className="text-icon-sm" />
-            Copier le prévu → réel
-          </Button>
-        ) : null}
-
-        {activeLane === 'planned' ? (
-          <LaneEditor draft={planned} onChange={onChangePlanned} shortcuts={shortcuts} showShortcuts />
-        ) : (
-          <LaneEditor draft={actual} onChange={onChangeActual} shortcuts={shortcuts} showShortcuts />
-        )}
-
-        <div className="flex flex-wrap justify-end gap-2 pt-1">
-          {canDelete ? (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-4">
+          {timeTrackingEnabled ? (
+            <Button
+              type="button"
+              variant={BUTTON_VARIANT.neutral}
+              fullWidth={false}
+              className="w-auto px-3"
+              disabled={busy || !canCopyPlanned}
+              onClick={onCopyPlannedToActual}
+            >
+              <Icon name="content_copy" className="text-icon-sm" />
+              Copier le prévu → réel
+            </Button>
+          ) : null}
+          <div className="ms-auto flex flex-wrap gap-2">
             <Button
               type="button"
               variant={BUTTON_VARIANT.dangerOutline}
               fullWidth={false}
-              className="me-auto w-auto px-3"
+              className="w-auto px-3"
               disabled={busy}
-              onClick={onDelete}
+              onClick={onClose}
             >
-              Supprimer
+              Annuler
             </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant={BUTTON_VARIANT.dangerOutline}
-            fullWidth={false}
-            className="w-auto px-3"
-            disabled={busy}
-            onClick={onClose}
-          >
-            Annuler
-          </Button>
-          <Button
-            type="button"
-            variant={BUTTON_VARIANT.success}
-            fullWidth={false}
-            className="w-auto px-4"
-            loading={busy}
-            onClick={onSave}
-          >
-            Enregistrer
-          </Button>
+            <Button
+              type="button"
+              variant={BUTTON_VARIANT.success}
+              fullWidth={false}
+              className="w-auto px-4"
+              loading={busy}
+              onClick={onSave}
+            >
+              Enregistrer
+            </Button>
+          </div>
         </div>
       </div>
     </Dialog>

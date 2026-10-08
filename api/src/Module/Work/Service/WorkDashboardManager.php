@@ -76,8 +76,18 @@ final class WorkDashboardManager
                 $weeksApprox = max(1, $daysInMonth / 7);
                 $contractBudget = (int) round($job->getContractWeeklyMinutes() * $weeksApprox);
 
-                $plannedSummary = $this->calculator->summarizePlanWithContractBudget($job, $planEntries, $contractBudget);
-                $actualSummary = $this->calculator->summarizeWithContractBudget($job, $actualEntries, $contractBudget);
+                $plannedSummary = $this->calculator->summarizePlanWithContractBudget(
+                    $job,
+                    $planEntries,
+                    $contractBudget,
+                    $daysInMonth,
+                );
+                $actualSummary = $this->calculator->summarizeWithContractBudget(
+                    $job,
+                    $actualEntries,
+                    $contractBudget,
+                    $daysInMonth,
+                );
 
                 foreach ($planEntries as $entry) {
                     $key = $entry->getWorkDate()->format('Y-m-d');

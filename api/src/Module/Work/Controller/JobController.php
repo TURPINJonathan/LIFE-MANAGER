@@ -60,7 +60,11 @@ final class JobController extends AbstractController
                 'overtimeThresholdWeeklyMinutes' => $data['overtimeThresholdWeeklyMinutes'] ?? null,
                 'employeeContributionRateBps'    => $data['employeeContributionRateBps'] ?? null,
                 'pasRateBps'                     => $data['pasRateBps'] ?? null,
+                'monthlyMutuelleCents'           => $data['monthlyMutuelleCents'] ?? null,
+                'monthlyPrevoyanceCents'         => $data['monthlyPrevoyanceCents'] ?? null,
+                'monthlyOtherDeductionCents'     => $data['monthlyOtherDeductionCents'] ?? null,
                 'netEstimateMode'                => $data['netEstimateMode'] ?? null,
+                'weekTemplate'                   => $data['weekTemplate'] ?? null,
             ]);
         } catch (WorkerNotFoundException $e) {
             return JsonRequest::error($e, Response::HTTP_NOT_FOUND);

@@ -12,7 +12,7 @@ import type {
   Worker,
 } from '@app-types';
 
-import { ApiError, apiFetch, readJson } from './api-client';
+import { ApiError, apiBaseUrl, apiFetch, readJson } from './api-client';
 
 async function parseError(response: Response, fallback: string): Promise<never> {
   try {
@@ -227,8 +227,7 @@ export async function uploadWorkDocumentFile(token: string, id: string, file: Fi
 }
 
 export function workDocumentFileUrl(fileUrl: string): string {
-  const base = import.meta.env.VITE_API_URL ?? 'http://localhost:9100';
-  return `${base}${fileUrl}`;
+  return `${apiBaseUrl()}${fileUrl}`;
 }
 
 export async function listPlanEntries(
@@ -318,9 +317,7 @@ export async function fetchTimesheetPdf(
   if (!response.ok) {
     return parseError(
       response,
-      kind === 'blank'
-        ? 'Impossible de générer le pointage vierge.'
-        : 'Impossible de générer la feuille d’heures.',
+      kind === 'blank' ? 'Impossible de générer le pointage vierge.' : 'Impossible de générer la feuille d’heures.',
     );
   }
   const blob = await response.blob();

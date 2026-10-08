@@ -167,8 +167,8 @@ final class TimeTrackingManager
         $weeksApprox = $days / 7;
         $contractBudget = (int) round($job->getContractWeeklyMinutes() * $weeksApprox);
 
-        $actual = $this->calculator->summarizeWithContractBudget($job, $entries, $contractBudget);
-        $planned = $this->calculator->summarizePlanWithContractBudget($job, $planEntries, $contractBudget);
+        $actual = $this->calculator->summarizeWithContractBudget($job, $entries, $contractBudget, $days);
+        $planned = $this->calculator->summarizePlanWithContractBudget($job, $planEntries, $contractBudget, $days);
 
         $byDayMap = [];
         for ($d = $fromDate; $d <= $toDate; $d = $d->modify('+1 day')) {
@@ -259,8 +259,8 @@ final class TimeTrackingManager
         $contractWeekly = $job->getContractWeeklyMinutes();
         $legalWeekly = Job::DEFAULT_WEEKLY_MINUTES;
 
-        $weekActual = $this->calculator->summarizeWithContractBudget($job, $weekEntries, $contractWeekly);
-        $weekPlanned = $this->calculator->summarizePlanWithContractBudget($job, $weekPlans, $contractWeekly);
+        $weekActual = $this->calculator->summarizeWithContractBudget($job, $weekEntries, $contractWeekly, 7);
+        $weekPlanned = $this->calculator->summarizePlanWithContractBudget($job, $weekPlans, $contractWeekly, 7);
 
         $actualWorked = (int) $weekActual['workedMinutes'];
         $plannedWorked = (int) $weekPlanned['workedMinutes'];

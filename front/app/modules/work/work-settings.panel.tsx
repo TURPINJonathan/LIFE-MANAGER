@@ -12,7 +12,13 @@ import {
   SectionCard,
   TpeAmountInput,
 } from '@components';
-import { BUTTON_VARIANT, FIELD_CONTROL_CLASSES, ICON_BUTTON_VARIANT, PRESET_COLORS } from '@constants';
+import {
+  BUTTON_VARIANT,
+  DIALOG_SIZE,
+  FIELD_CONTROL_CLASSES,
+  ICON_BUTTON_VARIANT,
+  PRESET_COLORS,
+} from '@constants';
 import {
   ApiError,
   archiveJob,
@@ -57,6 +63,22 @@ type JobForm = {
   pasPercent: string;
 };
 
+const emptyJobForm = (): JobForm => ({
+  title: '',
+  companyName: '',
+  companySiret: '',
+  startDate: todayIsoLocal(),
+  endDate: '',
+  notes: '',
+  weeklyHours: '35',
+  contractType: 'cdi',
+  status: 'non_cadre',
+  timeTrackingEnabled: true,
+  overtimeRatePercent: '125',
+  contributionPercent: '22',
+  pasPercent: '0',
+});
+
 type PendingArchive = { type: 'worker'; id: string; label: string } | { type: 'job'; id: string; label: string };
 
 export function WorkSettingsPanel() {
@@ -67,6 +89,9 @@ export function WorkSettingsPanel() {
   const [workerDialog, setWorkerDialog] = useState<'create' | Worker | null>(null);
   const [jobDialog, setJobDialog] = useState<{ worker: Worker; job?: WorkJob } | null>(null);
   const [hourlyAmount, setHourlyAmount] = useState('');
+  const [mutuelleAmount, setMutuelleAmount] = useState('');
+  const [prevoyanceAmount, setPrevoyanceAmount] = useState('');
+  const [otherDeductionAmount, setOtherDeductionAmount] = useState('');
   const [weekDraft, setWeekDraft] = useState<WeekTemplate>(() => defaultWeekTemplate());
   const [weekDialogOpen, setWeekDialogOpen] = useState(false);
   const [pendingArchive, setPendingArchive] = useState<PendingArchive | null>(null);
@@ -74,31 +99,19 @@ export function WorkSettingsPanel() {
 
   const weekDraftMinutes = useMemo(
     () =>
-      weekDraft.reduce(
-        (sum, day) => sum + (day.enabled ? segmentSpanMinutes(day.segments, day.pauseMinutes) : 0),
-        0,
-      ),
+      weekDraft.reduce((sum, day) => sum + (day.enabled ? segmentSpanMinutes(day.segments, day.pauseMinutes) : 0), 0),
     [weekDraft],
   );
 
   const workerForm = useForm<WorkerForm>({ defaultValues: { firstName: '', lastName: '', notes: '' } });
-  const jobForm = useForm<JobForm>({
-    defaultValues: {
-      title: '',
-      companyName: '',
-      companySiret: '',
-      startDate: todayIsoLocal(),
-      endDate: '',
-      notes: '',
-      weeklyHours: '35',
-      contractType: 'cdi',
-      status: 'non_cadre',
-      timeTrackingEnabled: true,
-      overtimeRatePercent: '125',
-      contributionPercent: '22',
-      pasPercent: '0',
-    },
-  });
+  const jobForm = useForm<JobForm>({ defaultValues: emptyJobForm() });
+
+  const resetMoneyFields = (job?: WorkJob) => {
+    setHourlyAmount(job ? centsToInput(job.grossHourlyRateCents) : '');
+    setMutuelleAmount(job ? centsToInput(job.monthlyMutuelleCents) : '');
+    setPrevoyanceAmount(job ? centsToInput(job.monthlyPrevoyanceCents) : '');
+    setOtherDeductionAmount(job ? centsToInput(job.monthlyOtherDeductionCents) : '');
+  };
 
   const reload = async () => {
     if (!token) return;
@@ -119,24 +132,10 @@ export function WorkSettingsPanel() {
   }, [token]);
 
   const openJobCreate = (worker: Worker) => {
-    setHourlyAmount('');
+    resetMoneyFields();
     setWeekDraft(defaultWeekTemplate());
     setWeekDialogOpen(false);
-    jobForm.reset({
-      title: '',
-      companyName: '',
-      companySiret: '',
-      startDate: todayIsoLocal(),
-      endDate: '',
-      notes: '',
-      weeklyHours: '35',
-      contractType: 'cdi',
-      status: 'non_cadre',
-      timeTrackingEnabled: true,
-      overtimeRatePercent: '125',
-      contributionPercent: '22',
-      pasPercent: '0',
-    });
+    jobForm.reset(emptyJobForm());
     setJobDialog({ worker });
   };
 
@@ -144,7 +143,7 @@ export function WorkSettingsPanel() {
     if (!token) return;
     try {
       const job = await getJob(token, jobId);
-      setHourlyAmount(centsToInput(job.grossHourlyRateCents));
+      resetMoneyFields(job);
       setWeekDraft(job.weekTemplate ?? defaultWeekTemplate(job.workDaysMask));
       setWeekDialogOpen(false);
       jobForm.reset({
@@ -210,6 +209,9 @@ export function WorkSettingsPanel() {
       overtimeRateBps: percentInputToBps(values.overtimeRatePercent),
       employeeContributionRateBps: percentInputToBps(values.contributionPercent),
       pasRateBps: percentInputToBps(values.pasPercent),
+      monthlyMutuelleCents: parseEurosToCents(mutuelleAmount) ?? 0,
+      monthlyPrevoyanceCents: parseEurosToCents(prevoyanceAmount) ?? 0,
+      monthlyOtherDeductionCents: parseEurosToCents(otherDeductionAmount) ?? 0,
       weekTemplate: weekDraft,
       color: PRESET_COLORS[2] ?? '#3F6F5E',
       icon: 'work',
@@ -413,92 +415,164 @@ export function WorkSettingsPanel() {
         }}
         title={jobDialog?.job ? 'Modifier l’emploi' : `Nouvel emploi · ${jobDialog?.worker.fullName ?? ''}`}
         icon="work"
+        size={DIALOG_SIZE.wide}
       >
-        <form className="mt-4 flex flex-col gap-3" onSubmit={submitJob}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <FormField label="Poste" htmlFor="sj-title">
-              <input
-                id="sj-title"
-                className={FIELD_CONTROL_CLASSES}
-                {...jobForm.register('title', { required: true })}
-              />
-            </FormField>
-            <FormField label="Entreprise" htmlFor="sj-company">
-              <input
-                id="sj-company"
-                className={FIELD_CONTROL_CLASSES}
-                {...jobForm.register('companyName', { required: true })}
-              />
-            </FormField>
-            <FormField label="SIRET" htmlFor="sj-siret">
-              <input id="sj-siret" className={FIELD_CONTROL_CLASSES} {...jobForm.register('companySiret')} />
-            </FormField>
-            <FormField label="Temps hebdo (h)" htmlFor="sj-weekly">
-              <input id="sj-weekly" className={FIELD_CONTROL_CLASSES} {...jobForm.register('weeklyHours')} />
-            </FormField>
-            <FormField label="Début" htmlFor="sj-start">
-              <input id="sj-start" type="date" className={FIELD_CONTROL_CLASSES} {...jobForm.register('startDate')} />
-            </FormField>
-            <FormField label="Fin" htmlFor="sj-end">
-              <input id="sj-end" type="date" className={FIELD_CONTROL_CLASSES} {...jobForm.register('endDate')} />
-            </FormField>
-            <FormField label="Contrat" htmlFor="sj-contract">
-              <select id="sj-contract" className={FIELD_CONTROL_CLASSES} {...jobForm.register('contractType')}>
-                {Object.entries(CONTRACT_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-            <FormField label="Statut" htmlFor="sj-status">
-              <select id="sj-status" className={FIELD_CONTROL_CLASSES} {...jobForm.register('status')}>
-                <option value="non_cadre">Non-cadre</option>
-                <option value="cadre">Cadre</option>
-              </select>
-            </FormField>
-          </div>
-          <FormField label="Taux horaire brut" htmlFor="sj-rate">
-            <TpeAmountInput
-              id="sj-rate"
-              value={hourlyAmount}
-              onChange={setHourlyAmount}
-              className={cn(FIELD_CONTROL_CLASSES, 'font-semibold tabular-nums')}
-            />
-          </FormField>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <FormField label="Majoration HS (%)" htmlFor="sj-ot">
-              <input id="sj-ot" className={FIELD_CONTROL_CLASSES} {...jobForm.register('overtimeRatePercent')} />
-            </FormField>
-            <FormField label="Cotisations (%)" htmlFor="sj-contrib">
-              <input id="sj-contrib" className={FIELD_CONTROL_CLASSES} {...jobForm.register('contributionPercent')} />
-            </FormField>
-            <FormField label="PAS (%)" htmlFor="sj-pas">
-              <input id="sj-pas" className={FIELD_CONTROL_CLASSES} {...jobForm.register('pasPercent')} />
-            </FormField>
-          </div>
-          <label className="flex items-center gap-2 text-control">
-            <input type="checkbox" {...jobForm.register('timeTrackingEnabled')} />
-            Pointeuse activée
-          </label>
-          {jobDialog?.job ? (
-            <Button
-              type="button"
-              variant={BUTTON_VARIANT.neutral}
-              onClick={() => {
-                if (!token || !jobDialog.job) return;
-                void suggestContributionRate(token, jobDialog.job.id)
-                  .then((s) => {
-                    jobForm.setValue('contributionPercent', bpsToPercentInput(s.employeeContributionRateBps));
-                    toastInfo(s.note ?? 'Taux suggéré appliqué.');
-                  })
-                  .catch((err) => toastFromError(err, 'Suggestion impossible.'));
-              }}
-            >
-              Suggérer cotisations
-            </Button>
-          ) : null}
-          <div className="rounded-control border border-border-subtle bg-page p-3 dark:bg-elevated">
+        <form className="mt-5 flex flex-col gap-6" onSubmit={submitJob}>
+          <section className="flex flex-col gap-3">
+            <h3 className="text-control font-semibold uppercase tracking-wide text-fg-muted">Poste</h3>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <FormField label="Intitulé" htmlFor="sj-title">
+                <input
+                  id="sj-title"
+                  className={FIELD_CONTROL_CLASSES}
+                  {...jobForm.register('title', { required: true })}
+                />
+              </FormField>
+              <FormField label="Entreprise" htmlFor="sj-company">
+                <input
+                  id="sj-company"
+                  className={FIELD_CONTROL_CLASSES}
+                  {...jobForm.register('companyName', { required: true })}
+                />
+              </FormField>
+              <FormField label="SIRET" htmlFor="sj-siret" hint="Optionnel">
+                <input id="sj-siret" className={FIELD_CONTROL_CLASSES} {...jobForm.register('companySiret')} />
+              </FormField>
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <h3 className="text-control font-semibold uppercase tracking-wide text-fg-muted">Contrat</h3>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <FormField label="Début" htmlFor="sj-start">
+                <input
+                  id="sj-start"
+                  type="date"
+                  className={FIELD_CONTROL_CLASSES}
+                  {...jobForm.register('startDate')}
+                />
+              </FormField>
+              <FormField label="Fin" htmlFor="sj-end" hint="Optionnel">
+                <input id="sj-end" type="date" className={FIELD_CONTROL_CLASSES} {...jobForm.register('endDate')} />
+              </FormField>
+              <FormField label="Temps hebdo (h)" htmlFor="sj-weekly">
+                <input id="sj-weekly" className={FIELD_CONTROL_CLASSES} {...jobForm.register('weeklyHours')} />
+              </FormField>
+              <FormField label="Type de contrat" htmlFor="sj-contract">
+                <select id="sj-contract" className={FIELD_CONTROL_CLASSES} {...jobForm.register('contractType')}>
+                  {Object.entries(CONTRACT_TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="Statut" htmlFor="sj-status">
+                <select id="sj-status" className={FIELD_CONTROL_CLASSES} {...jobForm.register('status')}>
+                  <option value="non_cadre">Non-cadre</option>
+                  <option value="cadre">Cadre</option>
+                </select>
+              </FormField>
+              <div className="flex items-end pb-1">
+                <label className="flex items-center gap-2 text-control">
+                  <input type="checkbox" {...jobForm.register('timeTrackingEnabled')} />
+                  Pointeuse activée
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <h3 className="text-control font-semibold uppercase tracking-wide text-fg-muted">Rémunération</h3>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <FormField label="Taux horaire brut" htmlFor="sj-rate">
+                <TpeAmountInput
+                  id="sj-rate"
+                  value={hourlyAmount}
+                  onChange={setHourlyAmount}
+                  className={cn(FIELD_CONTROL_CLASSES, 'font-semibold tabular-nums')}
+                />
+              </FormField>
+              <FormField label="Majoration HS (%)" htmlFor="sj-ot" hint="125 = +25 %">
+                <input
+                  id="sj-ot"
+                  className={FIELD_CONTROL_CLASSES}
+                  {...jobForm.register('overtimeRatePercent')}
+                />
+              </FormField>
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <h3 className="text-control font-semibold uppercase tracking-wide text-fg-muted">
+                Estimation nette
+              </h3>
+              {jobDialog?.job ? (
+                <Button
+                  type="button"
+                  variant={BUTTON_VARIANT.neutral}
+                  fullWidth={false}
+                  className="h-9 w-auto px-3"
+                  onClick={() => {
+                    if (!token || !jobDialog.job) return;
+                    void suggestContributionRate(token, jobDialog.job.id)
+                      .then((s) => {
+                        jobForm.setValue('contributionPercent', bpsToPercentInput(s.employeeContributionRateBps));
+                        toastInfo(s.note ?? 'Taux suggéré appliqué.');
+                      })
+                      .catch((err) => toastFromError(err, 'Suggestion impossible.'));
+                  }}
+                >
+                  Suggérer cotisations
+                </Button>
+              ) : null}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <FormField label="Cotisations (%)" htmlFor="sj-contrib" hint="Parts salariales + CSG/CRDS">
+                <input
+                  id="sj-contrib"
+                  className={FIELD_CONTROL_CLASSES}
+                  {...jobForm.register('contributionPercent')}
+                />
+              </FormField>
+              <FormField label="PAS (%)" htmlFor="sj-pas" hint="Prélèvement à la source">
+                <input id="sj-pas" className={FIELD_CONTROL_CLASSES} {...jobForm.register('pasPercent')} />
+              </FormField>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <FormField label="Mutuelle (€ / mois)" htmlFor="sj-mutuelle" hint="Part salariale">
+                <TpeAmountInput
+                  id="sj-mutuelle"
+                  value={mutuelleAmount}
+                  onChange={setMutuelleAmount}
+                  className={cn(FIELD_CONTROL_CLASSES, 'tabular-nums')}
+                />
+              </FormField>
+              <FormField label="Prévoyance (€ / mois)" htmlFor="sj-prevoyance" hint="Part salariale">
+                <TpeAmountInput
+                  id="sj-prevoyance"
+                  value={prevoyanceAmount}
+                  onChange={setPrevoyanceAmount}
+                  className={cn(FIELD_CONTROL_CLASSES, 'tabular-nums')}
+                />
+              </FormField>
+              <FormField
+                label="Autres retenues (€ / mois)"
+                htmlFor="sj-other"
+                hint="Tickets resto, etc."
+              >
+                <TpeAmountInput
+                  id="sj-other"
+                  value={otherDeductionAmount}
+                  onChange={setOtherDeductionAmount}
+                  className={cn(FIELD_CONTROL_CLASSES, 'tabular-nums')}
+                />
+              </FormField>
+            </div>
+          </section>
+
+          <section className="rounded-control border border-border-subtle bg-page p-4 dark:bg-elevated">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-body font-medium text-fg-primary">Semaine type</p>
@@ -517,11 +591,13 @@ export function WorkSettingsPanel() {
                 Configurer
               </Button>
             </div>
-          </div>
-          <FormField label="Notes" htmlFor="sj-notes">
+          </section>
+
+          <FormField label="Notes" htmlFor="sj-notes" hint="Optionnel">
             <textarea id="sj-notes" rows={2} className={FIELD_CONTROL_CLASSES} {...jobForm.register('notes')} />
           </FormField>
-          <div className="flex justify-end gap-2">
+
+          <div className="flex justify-end gap-2 border-t border-border-subtle pt-4">
             <Button
               type="button"
               variant={BUTTON_VARIANT.dangerOutline}
