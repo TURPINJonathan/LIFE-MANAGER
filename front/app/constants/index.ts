@@ -17,6 +17,7 @@ export {
   isTransparentColor,
   type IconCatalogEntry,
 } from './icon-catalog.constants';
+export { ICON_CATALOG_FEATURED, ICON_EXTRA_LABELS } from './icon-search.constants';
 export { CREATE_ENTRIES, MENU_ITEMS, NAV_ITEMS } from './navigation.constants';
 export {
   APP_ROUTE,

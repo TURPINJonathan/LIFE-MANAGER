@@ -2,6 +2,9 @@
 /**
  * Génère front/app/constants/icon-catalog.constants.ts
  * à partir de la liste Material Symbols + dictionnaire FR.
+ *
+ * La recherche FR « métier » (loyer, essence, cadeau…) vit dans
+ * app/constants/icon-search.constants.ts — ne pas tout mettre ici.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 

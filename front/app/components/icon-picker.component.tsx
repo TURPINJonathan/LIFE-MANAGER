@@ -37,7 +37,7 @@ export function IconPicker({ value, onChange, label = 'Icône' }: IconPickerProp
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Rechercher (ex. épargne, courses, train…)"
+            placeholder="Rechercher (ex. loyer, essence, cadeau, médecin…)"
             className="h-12 w-full rounded-control border border-border bg-page px-3 text-body outline-none focus:border-accent focus:shadow-[var(--focus-ring)]"
           />
           <p className="text-control text-fg-muted">
@@ -45,7 +45,7 @@ export function IconPicker({ value, onChange, label = 'Icône' }: IconPickerProp
               ? truncated
                 ? `${icons.length} sur ${total} résultat${total > 1 ? 's' : ''} — affinez la recherche`
                 : `${total} résultat${total > 1 ? 's' : ''}`
-              : `${ICON_CATALOG_COUNT} icônes — tapez pour filtrer (${icons.length} affichées)`}
+              : `${icons.length} suggestions · ${ICON_CATALOG_COUNT} icônes au total — tapez un mot pour chercher`}
           </p>
           <div className="grid max-h-[50dvh] grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6">
             {icons.map((entry) => {
