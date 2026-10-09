@@ -8,6 +8,10 @@ import { cn, formatCents, signedAmountClass } from '@utils';
 type SubAccountSwitcherProps = {
   accounts: Account[];
   activeId?: string;
+  /** Vue courante à conserver en changeant de sous-compte. */
+  view?: 'operations' | 'budget';
+  /** Mois budget (`YYYY-MM`) — conservé si `view === 'budget'`. */
+  yearMonth?: string;
   className?: string;
 };
 
@@ -22,7 +26,13 @@ function flatten(accounts: Account[]): FlatSub[] {
   );
 }
 
-export function SubAccountSwitcher({ accounts, activeId, className }: SubAccountSwitcherProps) {
+export function SubAccountSwitcher({
+  accounts,
+  activeId,
+  view = 'operations',
+  yearMonth,
+  className,
+}: SubAccountSwitcherProps) {
   const items = flatten(accounts);
 
   if (items.length === 0) {
@@ -34,10 +44,14 @@ export function SubAccountSwitcher({ accounts, activeId, className }: SubAccount
       <ul className="m-0 flex w-full list-none flex-nowrap gap-2 p-0">
         {items.map((sub) => {
           const active = sub.id === activeId;
+          const to =
+            view === 'budget'
+              ? accountLedgerPath(sub.id, 'budget', { yearMonth })
+              : accountLedgerPath(sub.id);
           return (
             <li key={sub.id} className="min-w-0 flex-1 basis-0">
               <Link
-                to={accountLedgerPath(sub.id)}
+                to={to}
                 className={cn(
                   'relative flex h-full min-h-[4.75rem] w-full cursor-pointer flex-col overflow-hidden rounded-panel p-2.5 transition-[border-color,filter,background-color] duration-(--duration-fast) sm:min-h-[5.25rem] sm:p-3',
                   !active && 'hover:brightness-[0.98] dark:hover:brightness-110',

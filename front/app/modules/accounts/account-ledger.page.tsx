@@ -622,7 +622,14 @@ export function AccountLedgerPage() {
           </div>
         </div>
 
-        {accounts.length > 0 && <SubAccountSwitcher accounts={accounts} activeId={subAccountId} />}
+        {accounts.length > 0 && (
+          <SubAccountSwitcher
+            accounts={accounts}
+            activeId={subAccountId}
+            view={view}
+            yearMonth={view === 'budget' ? budgetMonth : undefined}
+          />
+        )}
       </div>
 
       <div

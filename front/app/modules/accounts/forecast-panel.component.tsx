@@ -648,6 +648,7 @@ export function ForecastPanel({
                 previousActualCents={stats.previousMonth?.totals.actualIncomeCents ?? 0}
                 previousMonthLabel={prevMonthLabel}
                 tone="income"
+                planNetCents={stats.totals.plannedNetCents}
                 rows={incomeCategories}
                 orphans={incomeOrphans}
                 previousByKey={previousByKey}
@@ -666,6 +667,7 @@ export function ForecastPanel({
                 previousActualCents={stats.previousMonth?.totals.actualExpenseCents ?? 0}
                 previousMonthLabel={prevMonthLabel}
                 tone="expense"
+                planNetCents={stats.totals.plannedNetCents}
                 rows={expenseCategories}
                 orphans={expenseOrphans}
                 previousByKey={previousByKey}
@@ -918,6 +920,7 @@ function ForecastCategoryColumn({
   previousActualCents,
   previousMonthLabel,
   tone,
+  planNetCents,
   rows,
   orphans,
   previousByKey,
@@ -935,6 +938,8 @@ function ForecastCategoryColumn({
   previousActualCents: number;
   previousMonthLabel: string;
   tone: 'income' | 'expense';
+  /** Solde planifié (revenus − dépenses) : pastille sur la colonne à corriger. */
+  planNetCents?: number;
   rows: AggregatedStatsCategory[];
   orphans: ForecastStatsPreviousCategory[];
   previousByKey: Map<string, ForecastStatsPreviousCategory>;
@@ -944,16 +949,55 @@ function ForecastCategoryColumn({
   onOpenOperations: (row: AggregatedStatsCategory) => void;
   onAddOrphan: (orphan: ForecastStatsPreviousCategory) => void;
 }) {
+  // Excédent → revenus (trop / marge) ; déficit → dépenses (trop élevées) ; équilibré → les deux.
+  const showPlanNet =
+    planNetCents !== undefined &&
+    (planNetCents === 0 || (tone === 'income' ? planNetCents > 0 : planNetCents < 0));
+  const planNetLabel =
+    planNetCents === undefined
+      ? ''
+      : planNetCents === 0
+        ? 'Équilibré'
+        : planNetCents > 0
+          ? `Excédent ${formatCents(planNetCents)}`
+          : `Déficit ${formatCents(Math.abs(planNetCents))}`;
+
+  // Bordure + ombre interne en deux couches : la première reprend l’opacité du bord, la seconde fond vers le centre.
+  const planNetChrome =
+    !showPlanNet || planNetCents === undefined
+      ? 'border-border-subtle'
+      : planNetCents === 0
+        ? 'border-border shadow-[inset_0_0_10px_color-mix(in_srgb,var(--border)_50%,transparent),inset_0_0_24px_color-mix(in_srgb,var(--border)_22%,transparent)]'
+        : planNetCents > 0
+          ? 'border-success/40 shadow-[inset_0_0_12px_color-mix(in_srgb,var(--success)_38%,transparent),inset_0_0_28px_color-mix(in_srgb,var(--success)_14%,transparent)]'
+          : 'border-error/40 shadow-[inset_0_0_12px_color-mix(in_srgb,var(--error)_38%,transparent),inset_0_0_28px_color-mix(in_srgb,var(--error)_14%,transparent)]';
+
   return (
-    <section className="flex min-w-0 flex-col gap-3 rounded-panel border border-border-subtle bg-elevated p-3">
+    <section className={cn('flex min-w-0 flex-col gap-3 rounded-panel border bg-elevated p-3', planNetChrome)}>
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
             <Icon
               name={icon}
               className={cn('text-icon-sm', tone === 'income' ? 'text-success-strong' : 'text-error')}
             />
             <h3 className="text-body font-semibold text-fg-primary">{title}</h3>
+            {showPlanNet ? (
+              <Tooltip content="Revenus − dépenses planifiés (hors réalisé)">
+                <span
+                  className={cn(
+                    'inline-flex max-w-full truncate rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums',
+                    planNetCents === 0
+                      ? 'bg-subtle text-fg-secondary'
+                      : planNetCents! > 0
+                        ? 'bg-success/15 text-success-strong'
+                        : 'bg-error/15 text-error',
+                  )}
+                >
+                  {planNetLabel}
+                </span>
+              </Tooltip>
+            ) : null}
           </div>
           <p className="mt-1 text-control text-fg-muted">
             Planifié {formatCents(plannedCents)} · Réalisé{' '}
