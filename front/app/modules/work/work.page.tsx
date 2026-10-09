@@ -123,13 +123,13 @@ export function WorkPage() {
   return (
     <div className={APP_PAGE_FILL_CLASSES}>
       <div className={APP_PINNED_LIST_CHROME_CLASSES}>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
             <Typography variant="title" as="h1" className="truncate">
               Travail
             </Typography>
           </div>
-          <div className="relative z-10 flex shrink-0 items-center gap-0.5">
+          <div className="relative z-10 flex max-w-full flex-wrap items-center justify-end gap-0.5">
             <button
               type="button"
               className="inline-flex size-9 items-center justify-center rounded-control text-fg-secondary hover:bg-subtle"
@@ -138,7 +138,9 @@ export function WorkPage() {
             >
               <Icon name="chevron_left" className="text-icon-sm" />
             </button>
-            <span className="min-w-28 text-center text-control font-medium tabular-nums">{monthLabel}</span>
+            <span className="min-w-0 max-w-[9rem] truncate px-1 text-center text-control font-medium tabular-nums sm:max-w-none sm:min-w-28">
+              {monthLabel}
+            </span>
             <button
               type="button"
               className="inline-flex size-9 items-center justify-center rounded-control text-fg-secondary hover:bg-subtle"

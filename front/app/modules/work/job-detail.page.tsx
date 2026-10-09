@@ -14,6 +14,7 @@ import {
   Typography,
 } from '@components';
 import {
+  APP_CHROME_ROW_CLASSES,
   APP_PAGE_FILL_CLASSES,
   APP_PAGE_GUTTER_CLASSES,
   APP_PINNED_DETAIL_BODY_CLASSES,
@@ -438,7 +439,7 @@ export function JobDetailPage() {
   return (
     <div className={`${APP_PAGE_FILL_CLASSES} overflow-hidden`}>
       <div className={APP_PINNED_DETAIL_CHROME_CLASSES}>
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+        <div className={APP_CHROME_ROW_CLASSES}>
           <div className="flex min-w-0 items-center gap-2">
             <Link
               to={APP_ROUTE.work}
@@ -448,7 +449,7 @@ export function JobDetailPage() {
               <Icon name="arrow_back" className="text-icon-sm" />
             </Link>
             <span
-              className="flex size-10 shrink-0 items-center justify-center rounded-control bg-accent text-white"
+              className="flex size-8 shrink-0 items-center justify-center rounded-control bg-accent text-white sm:size-10"
               style={job.color ? { backgroundColor: job.color } : undefined}
             >
               <Icon name={job.icon ?? 'work'} className="text-icon-sm" />
@@ -464,7 +465,7 @@ export function JobDetailPage() {
             </div>
           </div>
 
-          <div className="flex justify-center px-1">
+          <div className="flex w-full justify-center md:w-auto md:px-1">
             {tab === 'temps' ? (
               <div className="flex items-center gap-0.5">
                 <IconButton
@@ -476,7 +477,7 @@ export function JobDetailPage() {
                 <Typography
                   variant="body"
                   weight="semibold"
-                  className="min-w-[8.5rem] text-center tabular-nums sm:min-w-[10rem]"
+                  className="min-w-0 max-w-[9.5rem] truncate px-1 text-center tabular-nums sm:min-w-[8.5rem] sm:max-w-none"
                 >
                   {monthLabel}
                 </Typography>
@@ -490,7 +491,7 @@ export function JobDetailPage() {
             ) : null}
           </div>
 
-          <div className="flex shrink-0 items-center justify-end gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
             <div
               className="inline-flex rounded-control border border-border-subtle bg-subtle p-0.5"
               role="group"
@@ -637,7 +638,7 @@ export function JobDetailPage() {
         ) : (
           <div className="flex flex-col gap-4">
             <div
-              className="inline-flex self-start rounded-control border border-border-subtle bg-subtle p-0.5"
+              className="flex max-w-full flex-wrap self-start rounded-control border border-border-subtle bg-subtle p-0.5"
               role="group"
               aria-label="Filtrer les documents"
             >

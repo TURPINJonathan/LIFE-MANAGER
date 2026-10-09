@@ -77,7 +77,7 @@ export function ForecastEditor({
       </header>
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <div className="min-w-[44rem]">
+        <div className="min-w-0 sm:min-w-[44rem]">
           <div className="sticky top-0 z-10 hidden grid-cols-[minmax(0,1.2fr)_7rem_9rem_6.75rem_auto] gap-2 border-b border-border-subtle bg-elevated px-4 py-2 text-[11px] font-medium tracking-wide text-fg-muted uppercase sm:grid">
             <span>Catégorie</span>
             <span>Montant</span>

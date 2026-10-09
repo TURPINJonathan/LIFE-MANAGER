@@ -578,7 +578,7 @@ export function ForecastPanel({
 
           {stats && (
             <div className="grid gap-3 lg:grid-cols-2 lg:items-stretch">
-              <div className="grid h-full min-h-64 grid-cols-2 gap-3 sm:grid-cols-3 sm:grid-rows-2">
+              <div className="grid h-full min-h-64 grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 sm:grid-rows-2">
                 <StatCard
                   label="Début de mois"
                   hint="Solde au 1er (date d’opération)"
@@ -900,7 +900,7 @@ function StatCard({
       <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-1 py-2">
         <p
           className={cn(
-            'text-center text-[1.65rem] font-bold leading-none tracking-tight tabular-nums sm:text-[1.85rem]',
+            'truncate text-center text-[1.25rem] font-bold leading-none tracking-tight tabular-nums sm:text-[1.65rem] md:text-[1.85rem]',
             signedAmountClass(value),
           )}
         >
@@ -951,8 +951,7 @@ function ForecastCategoryColumn({
 }) {
   // Excédent → revenus (trop / marge) ; déficit → dépenses (trop élevées) ; équilibré → les deux.
   const showPlanNet =
-    planNetCents !== undefined &&
-    (planNetCents === 0 || (tone === 'income' ? planNetCents > 0 : planNetCents < 0));
+    planNetCents !== undefined && (planNetCents === 0 || (tone === 'income' ? planNetCents > 0 : planNetCents < 0));
   const planNetLabel =
     planNetCents === undefined
       ? ''

@@ -45,7 +45,9 @@ export function Dialog({
         <div
           className={cn(
             'grid shrink-0 items-center gap-2',
-            headerCenter ? 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_auto]',
+            headerCenter
+              ? 'grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]'
+              : 'grid-cols-[minmax(0,1fr)_auto]',
           )}
         >
           <div className="flex min-w-0 items-center gap-2">
@@ -54,7 +56,11 @@ export function Dialog({
               {title}
             </Typography>
           </div>
-          {headerCenter ? <div className="justify-self-center">{headerCenter}</div> : null}
+          {headerCenter ? (
+            <div className="col-span-2 order-last justify-self-center sm:col-span-1 sm:order-none sm:col-start-2">
+              {headerCenter}
+            </div>
+          ) : null}
           <div className="flex justify-end">
             <IconButton variant={ICON_BUTTON_VARIANT.ghost} icon="close" onClick={onClose} aria-label="Fermer" />
           </div>

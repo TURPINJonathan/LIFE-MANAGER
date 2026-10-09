@@ -374,13 +374,13 @@ export function AccountsPage() {
   return (
     <div className={APP_PAGE_FILL_CLASSES}>
       <div className={APP_PINNED_LIST_CHROME_CLASSES}>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="min-w-0 sm:flex-1">
             <Typography variant="title" as="h1" className="truncate">
               Comptes
             </Typography>
           </div>
-          <div className="flex items-center gap-0.5">
+          <div className="flex w-full items-center justify-center gap-0.5 sm:w-auto">
             <IconButton
               variant={ICON_BUTTON_VARIANT.ghost}
               icon="chevron_left"
@@ -390,7 +390,7 @@ export function AccountsPage() {
             <Typography
               variant="body"
               weight="semibold"
-              className="min-w-[8.5rem] text-center tabular-nums sm:min-w-[11rem]"
+              className="min-w-0 max-w-[11rem] truncate px-1 text-center tabular-nums sm:min-w-[8.5rem] sm:max-w-none md:min-w-[11rem]"
             >
               {viewMode === 'year' ? periodLabel : monthLabel}
             </Typography>
@@ -401,7 +401,7 @@ export function AccountsPage() {
               onClick={() => (viewMode === 'year' ? shiftPeriod(1) : setYearMonth(shiftYearMonth(yearMonth, 1)))}
             />
           </div>
-          <div className="relative z-10 flex flex-1 items-center justify-end gap-0.5">
+          <div className="relative z-10 flex w-full flex-wrap items-center justify-end gap-0.5 sm:flex-1">
             {viewMode === 'year' ? (
               <div
                 className="me-1 inline-flex rounded-control border border-border-subtle bg-subtle p-0.5"
@@ -416,7 +416,8 @@ export function AccountsPage() {
                     yearSpan === 'calendar' ? 'bg-elevated text-fg-primary' : 'text-fg-muted hover:text-fg-primary',
                   )}
                 >
-                  Année {yearMonth.slice(0, 4)}
+                  <span className="sm:hidden">Civile</span>
+                  <span className="hidden sm:inline">Année {yearMonth.slice(0, 4)}</span>
                 </button>
                 <button
                   type="button"

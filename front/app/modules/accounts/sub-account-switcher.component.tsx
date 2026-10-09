@@ -41,15 +41,12 @@ export function SubAccountSwitcher({
 
   return (
     <div className={cn('w-full', className)}>
-      <ul className="m-0 flex w-full list-none flex-nowrap gap-2 p-0">
+      <ul className="m-0 flex w-full list-none gap-2 overflow-x-auto p-0 pb-1">
         {items.map((sub) => {
           const active = sub.id === activeId;
-          const to =
-            view === 'budget'
-              ? accountLedgerPath(sub.id, 'budget', { yearMonth })
-              : accountLedgerPath(sub.id);
+          const to = view === 'budget' ? accountLedgerPath(sub.id, 'budget', { yearMonth }) : accountLedgerPath(sub.id);
           return (
-            <li key={sub.id} className="min-w-0 flex-1 basis-0">
+            <li key={sub.id} className="w-[9.5rem] shrink-0 sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0">
               <Link
                 to={to}
                 className={cn(

@@ -390,11 +390,17 @@ export function WorkSettingsPanel() {
               {...workerForm.register('notes')}
             />
           </FormField>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant={BUTTON_VARIANT.dangerOutline} onClick={() => setWorkerDialog(null)}>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant={BUTTON_VARIANT.dangerOutline}
+              fullWidth={false}
+              className="w-auto px-3"
+              onClick={() => setWorkerDialog(null)}
+            >
               Annuler
             </Button>
-            <Button type="submit" variant={BUTTON_VARIANT.success}>
+            <Button type="submit" variant={BUTTON_VARIANT.success} fullWidth={false} className="w-auto px-4">
               Enregistrer
             </Button>
           </div>
@@ -572,10 +578,12 @@ export function WorkSettingsPanel() {
             <textarea id="sj-notes" rows={2} className={FIELD_CONTROL_CLASSES} {...jobForm.register('notes')} />
           </FormField>
 
-          <div className="flex justify-end gap-2 border-t border-border-subtle pt-4">
+          <div className="flex flex-wrap justify-end gap-2 border-t border-border-subtle pt-4">
             <Button
               type="button"
               variant={BUTTON_VARIANT.dangerOutline}
+              fullWidth={false}
+              className="w-auto px-3"
               onClick={() => {
                 setWeekDialogOpen(false);
                 setJobDialog(null);
@@ -583,7 +591,7 @@ export function WorkSettingsPanel() {
             >
               Annuler
             </Button>
-            <Button type="submit" variant={BUTTON_VARIANT.success}>
+            <Button type="submit" variant={BUTTON_VARIANT.success} fullWidth={false} className="w-auto px-4">
               Enregistrer
             </Button>
           </div>

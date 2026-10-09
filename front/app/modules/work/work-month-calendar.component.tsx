@@ -76,17 +76,17 @@ export function WorkMonthCalendar({
           </span>
         </div>
       </div>
-      <div className="mb-2 grid grid-cols-7 gap-1">
+      <div className="mb-2 grid grid-cols-7 gap-0.5 sm:gap-1">
         {labels.map((label, i) => (
           <div key={`${label}-${i}`} className="py-1 text-center text-[11px] font-semibold text-fg-muted">
             {label}
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
         {cells.map((iso, index) => {
           if (!iso) {
-            return <div key={`e-${index}`} className="min-h-[4.5rem]" />;
+            return <div key={`e-${index}`} className="min-h-[3.5rem] sm:min-h-[4.5rem]" />;
           }
           const data = byDate.get(iso);
           const planned = data?.plannedMinutes ?? 0;
@@ -104,7 +104,7 @@ export function WorkMonthCalendar({
               onClick={() => onSelectDay(iso)}
               title={formatIsoDateFr(iso, { weekday: 'long' })}
               className={cn(
-                'relative flex min-h-[4.5rem] cursor-pointer flex-col items-stretch rounded-control border px-1 py-1.5 text-left transition',
+                'relative flex min-h-[3.5rem] cursor-pointer flex-col items-stretch rounded-control border px-0.5 py-1 text-left transition sm:min-h-[4.5rem] sm:px-1 sm:py-1.5',
                 selected
                   ? 'border-accent bg-accent text-white shadow-sm'
                   : hasData

@@ -30,6 +30,7 @@ export {
   workJobPath,
 } from './route.constants';
 export {
+  APP_CHROME_ROW_CLASSES,
   APP_MAIN_SURFACE_CLASSES,
   APP_PAGE_FILL_CLASSES,
   APP_PAGE_GUTTER_CLASSES,

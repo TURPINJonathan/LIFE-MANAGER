@@ -109,7 +109,7 @@ export function ForecastCategoryOperationsDialog({
             <Icon name={categoryIcon} className="text-[1.35rem]!" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="min-w-0">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-fg-muted">Objectif</p>
                 <p className="mt-0.5 truncate text-body font-semibold tabular-nums text-fg-primary">

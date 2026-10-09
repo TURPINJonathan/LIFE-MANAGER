@@ -176,7 +176,7 @@ function CategoryYearCard({ row }: { row: ForecastYearCategory }) {
       </div>
       <div className="relative z-10 min-w-0">
         {showBoth ? (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <YearToneChart months={months} tone="income" compact height={120} stroke={row.categoryColor} />
             <YearToneChart months={months} tone="expense" compact height={120} stroke={row.categoryColor} />
           </div>
@@ -232,18 +232,18 @@ function SubAccountYearCard({ row }: { row: ForecastYearSubAccount }) {
           Ouvrir
         </Link>
       </div>
-      <div className="relative z-10 grid grid-cols-3 gap-2 text-[11px] tabular-nums">
-        <div>
+      <div className="relative z-10 grid grid-cols-1 gap-2 text-[11px] tabular-nums min-[380px]:grid-cols-3">
+        <div className="min-w-0">
           <p className="text-fg-muted">Revenus</p>
-          <p className="font-semibold text-success-strong">{formatCents(row.totals.actualIncomeCents)}</p>
+          <p className="truncate font-semibold text-success-strong">{formatCents(row.totals.actualIncomeCents)}</p>
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-fg-muted">Dépenses</p>
-          <p className="font-semibold text-accent-press">{formatCents(row.totals.actualExpenseCents)}</p>
+          <p className="truncate font-semibold text-accent-press">{formatCents(row.totals.actualExpenseCents)}</p>
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-fg-muted">Solde</p>
-          <p className={cn('font-semibold', signedAmountClass(row.totals.actualNetCents))}>
+          <p className={cn('truncate font-semibold', signedAmountClass(row.totals.actualNetCents))}>
             {formatCents(row.totals.actualNetCents)}
           </p>
         </div>

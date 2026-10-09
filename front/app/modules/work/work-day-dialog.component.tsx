@@ -86,7 +86,7 @@ function LaneEditor({
 
       <div className="flex flex-col gap-2 rounded-control border border-border-subtle bg-page p-3 dark:bg-elevated">
         {segments.map((segment, index) => (
-          <div key={index} className="grid grid-cols-[1fr_auto_1fr_auto] items-end gap-2">
+          <div key={index} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr_auto] sm:items-end">
             <FormField label={index === 0 ? 'Début' : undefined} htmlFor={`${idPrefix}-start-${index}`}>
               <input
                 id={`${idPrefix}-start-${index}`}
@@ -101,7 +101,7 @@ function LaneEditor({
                 }
               />
             </FormField>
-            <span className="mb-2.5 text-fg-muted">→</span>
+            <span className="hidden text-fg-muted sm:mb-2.5 sm:inline">→</span>
             <FormField label={index === 0 ? 'Fin' : undefined} htmlFor={`${idPrefix}-end-${index}`}>
               <input
                 id={`${idPrefix}-end-${index}`}
@@ -120,7 +120,7 @@ function LaneEditor({
               variant={ICON_BUTTON_VARIANT.ghost}
               icon="close"
               aria-label="Retirer le créneau"
-              className="mb-0.5"
+              className="justify-self-end sm:mb-0.5 sm:justify-self-auto"
               disabled={segments.length <= 1}
               onClick={() =>
                 onChange({
@@ -143,7 +143,7 @@ function LaneEditor({
         </Button>
       </div>
 
-      <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[7.5rem_minmax(0,1fr)]">
         <FormField label="Pause (min)" htmlFor={`${idPrefix}-pause`}>
           <input
             id={`${idPrefix}-pause`}

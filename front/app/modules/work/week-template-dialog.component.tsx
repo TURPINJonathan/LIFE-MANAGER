@@ -100,7 +100,10 @@ export function WeekTemplateDialog({
                   {(day.segments.length > 0 ? day.segments : [emptySegment()]).map((segment, segIndex) => {
                     const segments = day.segments.length > 0 ? day.segments : [emptySegment()];
                     return (
-                      <div key={segIndex} className="grid grid-cols-[1fr_auto_1fr_auto] items-end gap-2">
+                      <div
+                        key={segIndex}
+                        className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr_auto] sm:items-end"
+                      >
                         <FormField label={segIndex === 0 ? 'Début' : undefined} htmlFor={`wt-${index}-s-${segIndex}`}>
                           <input
                             id={`wt-${index}-s-${segIndex}`}
@@ -115,7 +118,7 @@ export function WeekTemplateDialog({
                             }}
                           />
                         </FormField>
-                        <span className="mb-2.5 text-fg-muted">→</span>
+                        <span className="hidden text-fg-muted sm:mb-2.5 sm:inline">→</span>
                         <FormField label={segIndex === 0 ? 'Fin' : undefined} htmlFor={`wt-${index}-e-${segIndex}`}>
                           <input
                             id={`wt-${index}-e-${segIndex}`}
@@ -134,7 +137,7 @@ export function WeekTemplateDialog({
                           variant={ICON_BUTTON_VARIANT.ghost}
                           icon="close"
                           aria-label="Retirer"
-                          className="mb-0.5"
+                          className="justify-self-end sm:mb-0.5 sm:justify-self-auto"
                           disabled={segments.length <= 1}
                           onClick={() =>
                             onChange(

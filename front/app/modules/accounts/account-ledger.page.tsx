@@ -19,6 +19,7 @@ import {
   Typography,
 } from '@components';
 import {
+  APP_CHROME_ROW_CLASSES,
   APP_PAGE_FILL_CLASSES,
   APP_PINNED_DETAIL_BODY_CLASSES,
   APP_PINNED_DETAIL_CHROME_CLASSES,
@@ -478,7 +479,7 @@ export function AccountLedgerPage() {
   return (
     <div className={APP_PAGE_FILL_CLASSES}>
       <div className={APP_PINNED_DETAIL_CHROME_CLASSES}>
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+        <div className={APP_CHROME_ROW_CLASSES}>
           <div className="flex min-w-0 items-center gap-2">
             <Link
               to={APP_ROUTE.accounts}
@@ -492,7 +493,7 @@ export function AccountLedgerPage() {
             ) : (
               <>
                 <span
-                  className="flex size-10 shrink-0 items-center justify-center rounded-control text-white"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-control text-white sm:size-10"
                   style={{ backgroundColor: ledger.subAccount.color }}
                 >
                   <Icon name={ledger.subAccount.icon} className="text-icon-sm" />
@@ -501,19 +502,20 @@ export function AccountLedgerPage() {
                   <Typography variant="title" as="h1" className="truncate text-fg-primary">
                     {ledger.subAccount.name}
                   </Typography>
-                  <p className="truncate text-control text-fg-secondary">
-                    Solde{' '}
-                    <strong className={signedAmountClass(ledger.subAccount.balanceCents)}>
-                      {formatCents(ledger.subAccount.balanceCents)}
-                    </strong>
+                  <p className="flex flex-wrap gap-x-1.5 text-control text-fg-secondary">
+                    <span>
+                      Solde{' '}
+                      <strong className={signedAmountClass(ledger.subAccount.balanceCents)}>
+                        {formatCents(ledger.subAccount.balanceCents)}
+                      </strong>
+                    </span>
                     {ledger.subAccount.provisionalBalanceCents !== ledger.subAccount.balanceCents ? (
-                      <>
-                        {' · '}
+                      <span>
                         <span className="text-fg-muted">Provisoire </span>
                         <strong className={signedAmountClass(ledger.subAccount.provisionalBalanceCents)}>
                           {formatCents(ledger.subAccount.provisionalBalanceCents)}
                         </strong>
-                      </>
+                      </span>
                     ) : null}
                   </p>
                 </div>
@@ -521,7 +523,7 @@ export function AccountLedgerPage() {
             )}
           </div>
 
-          <div className="flex justify-center px-1">
+          <div className="flex w-full justify-center md:w-auto md:px-1">
             {view === 'budget' && budgetActions ? (
               <div className="flex items-center gap-0.5">
                 <IconButton
@@ -533,7 +535,7 @@ export function AccountLedgerPage() {
                 <Typography
                   variant="body"
                   weight="semibold"
-                  className="min-w-[8.5rem] text-center tabular-nums sm:min-w-[10rem]"
+                  className="min-w-0 max-w-[9.5rem] truncate px-1 text-center tabular-nums sm:min-w-[8.5rem] sm:max-w-none"
                 >
                   {budgetActions.monthLabel}
                 </Typography>
@@ -547,7 +549,7 @@ export function AccountLedgerPage() {
             ) : null}
           </div>
 
-          <div className="flex shrink-0 items-center justify-end gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
             {!loading && ledger ? (
               <>
                 <div
@@ -665,17 +667,17 @@ export function AccountLedgerPage() {
             className="min-h-0 flex-1 overflow-auto rounded-panel border border-border-subtle bg-elevated"
             data-app-scroll
           >
-            <table className="w-full min-w-[44rem] table-fixed border-separate border-spacing-0 text-left">
+            <table className="w-full min-w-[32rem] table-fixed border-separate border-spacing-0 text-left md:min-w-[44rem]">
               <colgroup>
-                <col className="w-[8rem]" />
-                <col className="w-[8rem]" />
+                <col className="w-[7rem] md:w-[8rem]" />
+                <col className="w-[7rem] md:w-[8rem]" />
                 <col className="w-12" />
                 <col className="w-16" />
                 <col />
-                <col className="w-[11rem]" />
+                <col className="w-[9rem] md:w-[11rem]" />
+                <col className="w-[6rem] md:w-[6.5rem]" />
                 <col className="w-[6.5rem]" />
-                <col className="w-[6.5rem]" />
-                <col className="w-[8.75rem]" />
+                <col className="w-[7rem] md:w-[8.75rem]" />
               </colgroup>
               <thead>
                 <tr className="text-control text-fg-muted">
@@ -693,13 +695,13 @@ export function AccountLedgerPage() {
                   </th>
                   <th
                     scope="col"
-                    className="sticky top-0 z-10 whitespace-nowrap border-b border-border-subtle bg-subtle px-1 py-2.5 text-center font-semibold"
+                    className="sticky top-0 z-10 hidden whitespace-nowrap border-b border-border-subtle bg-subtle px-1 py-2.5 text-center font-semibold md:table-cell"
                   >
                     Mode
                   </th>
                   <th
                     scope="col"
-                    className="sticky top-0 z-10 whitespace-nowrap border-b border-border-subtle bg-subtle px-1 py-2.5 text-center font-semibold"
+                    className="sticky top-0 z-10 hidden whitespace-nowrap border-b border-border-subtle bg-subtle px-1 py-2.5 text-center font-semibold md:table-cell"
                   >
                     Enseigne
                   </th>
@@ -723,7 +725,7 @@ export function AccountLedgerPage() {
                   </th>
                   <th
                     scope="col"
-                    className="sticky top-0 z-10 whitespace-nowrap border-b border-border-subtle bg-subtle px-2 py-2.5 text-center font-semibold sm:px-3"
+                    className="sticky top-0 z-10 hidden whitespace-nowrap border-b border-border-subtle bg-subtle px-2 py-2.5 text-center font-semibold md:table-cell sm:px-3"
                   >
                     Solde
                   </th>
@@ -768,7 +770,7 @@ export function AccountLedgerPage() {
                           </Tooltip>
                         )}
                       </td>
-                      <td className="px-1 py-2.5 text-center align-middle">
+                      <td className="hidden px-1 py-2.5 text-center align-middle md:table-cell">
                         <Tooltip content={methodTooltip}>
                           <span className="inline-flex size-7 items-center justify-center rounded-full text-fg-secondary">
                             <Icon name={PAYMENT_METHOD_ICONS[tx.paymentMethod]} className="text-icon-sm" />
@@ -776,7 +778,7 @@ export function AccountLedgerPage() {
                           </span>
                         </Tooltip>
                       </td>
-                      <td className="px-1 py-2.5 text-center align-middle">
+                      <td className="hidden px-1 py-2.5 text-center align-middle md:table-cell">
                         {tx.merchant ? (
                           <Tooltip content={tx.merchant.name}>
                             <MerchantVisual
@@ -814,7 +816,7 @@ export function AccountLedgerPage() {
                       >
                         {formatCents(tx.amountCents)}
                       </td>
-                      <td className="whitespace-nowrap px-2 py-2.5 text-right align-middle text-control tabular-nums sm:px-3">
+                      <td className="hidden whitespace-nowrap px-2 py-2.5 text-right align-middle text-control tabular-nums md:table-cell sm:px-3">
                         {tx.effectiveDate ? (
                           <span className={signedAmountClass(tx.balanceAfterCents ?? 0)}>
                             {formatCents(tx.balanceAfterCents ?? 0)}
@@ -1125,34 +1127,36 @@ export function AccountLedgerPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 pt-1">
-            <Button
-              type="button"
-              variant={BUTTON_VARIANT.dangerOutline}
-              fullWidth={false}
-              className="w-auto px-3"
-              onClick={closeForm}
-            >
-              Annuler
-            </Button>
-            {form.formState.isDirty || attachmentFile || removeAttachment ? (
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:flex-wrap">
+            <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
-                variant={BUTTON_VARIANT.neutral}
+                variant={BUTTON_VARIANT.dangerOutline}
                 fullWidth={false}
                 className="w-auto px-3"
-                onClick={resetTransactionForm}
+                onClick={closeForm}
               >
-                Réinitialiser
+                Annuler
               </Button>
-            ) : null}
-            <div className="ms-auto flex flex-wrap gap-2">
+              {form.formState.isDirty || attachmentFile || removeAttachment ? (
+                <Button
+                  type="button"
+                  variant={BUTTON_VARIANT.neutral}
+                  fullWidth={false}
+                  className="w-auto px-3"
+                  onClick={resetTransactionForm}
+                >
+                  Réinitialiser
+                </Button>
+              ) : null}
+            </div>
+            <div className="flex flex-col gap-2 sm:ms-auto sm:flex-row sm:flex-wrap">
               {creating ? (
                 <Button
                   type="button"
                   variant={BUTTON_VARIANT.successOutline}
                   fullWidth={false}
-                  className="w-auto px-3"
+                  className="w-full px-3 sm:w-auto"
                   loading={form.formState.isSubmitting}
                   onClick={() => void onSubmitAndNew()}
                 >
@@ -1163,7 +1167,7 @@ export function AccountLedgerPage() {
                 type="submit"
                 variant={BUTTON_VARIANT.success}
                 fullWidth={false}
-                className="w-auto px-4"
+                className="w-full px-4 sm:w-auto"
                 loading={form.formState.isSubmitting}
               >
                 Enregistrer

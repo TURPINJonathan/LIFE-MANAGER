@@ -242,7 +242,7 @@ export function DeadlinesCalendarDialog({
           <Typography
             variant="body"
             weight="semibold"
-            className="min-w-[8.5rem] text-center tabular-nums sm:min-w-[11rem]"
+            className="min-w-0 max-w-[9rem] truncate px-1 text-center tabular-nums sm:min-w-[8.5rem] sm:max-w-none md:min-w-[11rem]"
           >
             {monthLabel}
           </Typography>
@@ -257,7 +257,7 @@ export function DeadlinesCalendarDialog({
     >
       <div className="mt-4 flex flex-col gap-3">
         {showLoading ? <p className="text-center text-control text-fg-muted">Chargement…</p> : null}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
           {WEEKDAY_LABELS.map((label, index) => (
             <div key={`${label}-${index}`} className="py-1 text-center text-[11px] font-semibold text-fg-muted">
               {label}
@@ -267,7 +267,7 @@ export function DeadlinesCalendarDialog({
             ? null
             : cells.map((cell, index) => {
                 if (!cell) {
-                  return <div key={`empty-${index}`} className="min-h-[6.25rem]" />;
+                  return <div key={`empty-${index}`} className="min-h-[3.25rem] sm:min-h-[6.25rem]" />;
                 }
 
                 const items = byDay.get(cell.day) ?? [];
@@ -281,7 +281,7 @@ export function DeadlinesCalendarDialog({
                 const face = (
                   <div
                     className={cn(
-                      'flex h-full min-h-[6.25rem] w-full flex-col gap-1 rounded-control-sm border px-1 py-1 text-left',
+                      'flex h-full min-h-[3.25rem] w-full flex-col gap-0.5 rounded-control-sm border px-0.5 py-1 text-left sm:min-h-[6.25rem] sm:gap-1 sm:px-1',
                       items.length > 0 ? 'border-border-subtle bg-elevated' : 'border-transparent bg-subtle/40',
                       isPast && items.length > 0 && 'opacity-75',
                       isToday && 'ring-2 ring-accent/45 ring-offset-1 ring-offset-card',
@@ -297,40 +297,66 @@ export function DeadlinesCalendarDialog({
                       {cell.day}
                     </span>
                     {visible.length > 0 ? (
-                      <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-                        {visible.map((item) => (
-                          <li key={item.key}>
-                            <Link
-                              to={deadlinePath(item, viewMonth)}
-                              aria-label={`${item.categoryName}, ${item.subAccountName}`}
-                              className="flex min-w-0 items-center gap-1 rounded-control-sm bg-subtle/70 px-1 py-0.5 hover:bg-accent-tint"
-                              onClick={onClose}
-                            >
-                              <span
-                                className="size-1.5 shrink-0 rounded-full"
+                      <>
+                        <ul className="m-0 flex list-none flex-wrap gap-0.5 p-0 px-0.5 sm:hidden">
+                          {visible.map((item) => (
+                            <li key={item.key}>
+                              <Link
+                                to={deadlinePath(item, viewMonth)}
+                                aria-label={`${item.categoryName}, ${item.subAccountName}`}
+                                className="block size-2 rounded-full"
                                 style={{ backgroundColor: item.categoryColor }}
-                                aria-hidden="true"
+                                onClick={onClose}
                               />
-                              <span className="min-w-0 flex-1 truncate text-[10px] leading-tight text-fg-primary">
-                                {item.categoryName}
-                              </span>
-                              <span
-                                className={cn(
-                                  'hidden shrink-0 text-[10px] leading-tight font-medium tabular-nums sm:inline',
-                                  item.isExpense ? 'text-error' : 'text-success-strong',
-                                )}
+                            </li>
+                          ))}
+                          {hiddenCount > 0 ? (
+                            <li>
+                              <button
+                                type="button"
+                                className="text-[9px] leading-none text-fg-muted"
+                                onClick={() => setExpandedIso(cell.iso)}
                               >
-                                {formatCents(item.amountCents)}
-                              </span>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
+                                +{hiddenCount}
+                              </button>
+                            </li>
+                          ) : null}
+                        </ul>
+                        <ul className="m-0 hidden list-none flex-col gap-0.5 p-0 sm:flex">
+                          {visible.map((item) => (
+                            <li key={item.key}>
+                              <Link
+                                to={deadlinePath(item, viewMonth)}
+                                aria-label={`${item.categoryName}, ${item.subAccountName}`}
+                                className="flex min-w-0 items-center gap-1 rounded-control-sm bg-subtle/70 px-1 py-0.5 hover:bg-accent-tint"
+                                onClick={onClose}
+                              >
+                                <span
+                                  className="size-1.5 shrink-0 rounded-full"
+                                  style={{ backgroundColor: item.categoryColor }}
+                                  aria-hidden="true"
+                                />
+                                <span className="min-w-0 flex-1 truncate text-[10px] leading-tight text-fg-primary">
+                                  {item.categoryName}
+                                </span>
+                                <span
+                                  className={cn(
+                                    'shrink-0 text-[10px] leading-tight font-medium tabular-nums',
+                                    item.isExpense ? 'text-error' : 'text-success-strong',
+                                  )}
+                                >
+                                  {formatCents(item.amountCents)}
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
                     ) : null}
                     {hiddenCount > 0 ? (
                       <button
                         type="button"
-                        className="px-0.5 text-left text-[10px] font-medium text-fg-muted hover:text-fg-primary"
+                        className="hidden px-0.5 text-left text-[10px] font-medium text-fg-muted hover:text-fg-primary sm:block"
                         onClick={() => setExpandedIso(cell.iso)}
                       >
                         +{hiddenCount}

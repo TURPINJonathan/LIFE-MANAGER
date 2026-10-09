@@ -60,7 +60,7 @@ export const DIALOG_SIZE = {
 } as const;
 
 const DIALOG_PANEL_BASE_CLASSES =
-  'relative flex max-h-[92dvh] w-full animate-art-in flex-col overflow-hidden rounded-t-panel bg-card p-6 md:max-h-[85dvh] md:rounded-panel';
+  'relative flex max-h-[92dvh] w-full animate-art-in flex-col overflow-hidden rounded-t-panel bg-card p-4 md:max-h-[85dvh] md:rounded-panel md:p-6';
 
 export const DIALOG_SIZE_CLASSES: Record<(typeof DIALOG_SIZE)[keyof typeof DIALOG_SIZE], string> = {
   default: `${DIALOG_PANEL_BASE_CLASSES} md:max-w-md`,
@@ -211,6 +211,10 @@ export const APP_PINNED_LIST_BODY_CLASSES = 'min-h-0 flex-1 overflow-y-auto px-3
 export const APP_PINNED_DETAIL_CHROME_CLASSES =
   'flex min-w-0 shrink-0 flex-col gap-3 px-3 pt-4 pb-3 md:gap-4 md:px-6 md:pt-6 md:pb-4';
 export const APP_PINNED_DETAIL_BODY_CLASSES = 'min-h-0 min-w-0 flex-1 overflow-y-auto px-3 pb-4 md:px-6 md:pb-6';
+
+/** Rangée chrome détail : identité / nav / actions — colonne sous md, grille 3 cols au-delà. */
+export const APP_CHROME_ROW_CLASSES =
+  'flex min-w-0 flex-col gap-2 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center md:gap-2';
 
 export const LIST_CARD_SURFACE_CLASSES =
   'flex items-stretch gap-2 overflow-hidden rounded-control border-y border-r border-l-[3px] border-border-subtle bg-elevated transition-[border-color,background-color] duration-(--duration-fast) hover:border-border-strong md:gap-3';
