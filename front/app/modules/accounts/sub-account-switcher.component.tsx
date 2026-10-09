@@ -72,10 +72,10 @@ export function SubAccountSwitcher({ accounts, activeId, className }: SubAccount
                   <p
                     className={cn(
                       'text-center text-[1.05rem] font-bold leading-none tracking-tight tabular-nums sm:text-[1.15rem]',
-                      active ? 'text-white' : signedAmountClass(sub.balanceCents),
+                      active ? 'text-white' : signedAmountClass(sub.provisionalBalanceCents),
                     )}
                   >
-                    {formatCents(sub.balanceCents)}
+                    {formatCents(sub.provisionalBalanceCents)}
                   </p>
                 </div>
               </Link>

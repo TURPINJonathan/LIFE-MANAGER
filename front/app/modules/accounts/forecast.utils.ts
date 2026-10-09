@@ -175,12 +175,15 @@ export function formatYearPeriodLabel(anchor: string, span: 'calendar' | 'rollin
   return `${formatMonthShortLabel(from)} — ${formatMonthShortLabel(anchor)}`;
 }
 
-/** Solde à afficher pour le mois sélectionné (fin de mois / actuel / projection). */
+/**
+ * Solde à afficher pour le mois sélectionné (fin de mois / actuel provisoire / projection).
+ * `liveBalanceCents` = solde provisoire du sous-compte (opérations pointées + en attente).
+ */
 export function monthDisplayBalanceCents(stats: ForecastStats | null | undefined, liveBalanceCents: number): number {
   if (!stats) return liveBalanceCents;
   if (stats.meta.isPastMonth) return stats.balances.endOfMonthActualCents;
   if (stats.meta.isFutureMonth) return stats.balances.projectedRealisticCents;
-  return stats.balances.currentCents;
+  return liveBalanceCents;
 }
 
 export function budgetStatusLabel(summary: SubForecastSummary | undefined): 'ok' | 'over' | 'missing' {

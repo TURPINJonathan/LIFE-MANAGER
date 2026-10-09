@@ -249,7 +249,7 @@ export function AccountsPage() {
   const displayBalanceBySubId = useMemo(() => {
     const map: Record<string, number> = {};
     for (const sub of subs) {
-      map[sub.id] = monthDisplayBalanceCents(statsBySubId[sub.id], sub.balanceCents);
+      map[sub.id] = monthDisplayBalanceCents(statsBySubId[sub.id], sub.provisionalBalanceCents);
     }
     return map;
   }, [subs, statsBySubId]);
@@ -259,7 +259,7 @@ export function AccountsPage() {
       accounts.map((account) => ({
         account,
         balanceCents: account.subAccounts.reduce(
-          (sum, sub) => sum + (displayBalanceBySubId[sub.id] ?? sub.balanceCents),
+          (sum, sub) => sum + (displayBalanceBySubId[sub.id] ?? sub.provisionalBalanceCents),
           0,
         ),
         subs: account.subAccounts,
@@ -268,7 +268,7 @@ export function AccountsPage() {
   );
 
   const totalBalance = useMemo(
-    () => subs.reduce((sum, sub) => sum + (displayBalanceBySubId[sub.id] ?? sub.balanceCents), 0),
+    () => subs.reduce((sum, sub) => sum + (displayBalanceBySubId[sub.id] ?? sub.provisionalBalanceCents), 0),
     [subs, displayBalanceBySubId],
   );
   const negativeSubs = useMemo(
@@ -279,7 +279,7 @@ export function AccountsPage() {
   const distribution = useMemo(() => {
     const rows = subs.map((sub) => ({
       ...sub,
-      displayBalanceCents: displayBalanceBySubId[sub.id] ?? sub.balanceCents,
+      displayBalanceCents: displayBalanceBySubId[sub.id] ?? sub.provisionalBalanceCents,
     }));
     const absoluteTotal = rows.reduce((sum, sub) => sum + Math.abs(sub.displayBalanceCents), 0);
     return [...rows]
@@ -709,7 +709,7 @@ export function AccountsPage() {
                       <ul className="relative z-10 m-0 flex list-none flex-col gap-2 p-0">
                         {accountSubs.map((sub) => {
                           const status = budgetStatusLabel(forecast.bySubId[sub.id]);
-                          const displayBalance = displayBalanceBySubId[sub.id] ?? sub.balanceCents;
+                          const displayBalance = displayBalanceBySubId[sub.id] ?? sub.provisionalBalanceCents;
                           return (
                             <li key={sub.id}>
                               <ListCard
