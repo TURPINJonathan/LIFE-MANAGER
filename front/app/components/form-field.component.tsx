@@ -4,7 +4,7 @@ import { FIELD_HINT_CLASSES, FIELD_LABEL_CLASSES } from '@constants';
 import { cn } from '@utils';
 
 type FormFieldProps = {
-  label: string;
+  label?: string;
   htmlFor?: string;
   hint?: string;
   action?: ReactNode;
@@ -13,14 +13,22 @@ type FormFieldProps = {
 };
 
 export function FormField({ label, htmlFor, hint, action, children, className }: FormFieldProps) {
+  const showHeader = Boolean(label) || action != null;
+
   return (
     <div className={cn('flex flex-col', className)}>
-      <div className="mb-1.5 flex items-end justify-between gap-2">
-        <label htmlFor={htmlFor} className={cn(FIELD_LABEL_CLASSES, 'mb-0')}>
-          {label}
-        </label>
-        {action}
-      </div>
+      {showHeader ? (
+        <div className="mb-1.5 flex items-end justify-between gap-2">
+          {label ? (
+            <label htmlFor={htmlFor} className={cn(FIELD_LABEL_CLASSES, 'mb-0')}>
+              {label}
+            </label>
+          ) : (
+            <span />
+          )}
+          {action}
+        </div>
+      ) : null}
       {children}
       {hint && <p className={FIELD_HINT_CLASSES}>{hint}</p>}
     </div>
